@@ -4,7 +4,7 @@ import { registerSW } from 'virtual:pwa-register';
 import '@fontsource-variable/fraunces';
 import '@fontsource-variable/nunito';
 import './styles/index.css';
-import App from './App';
+import { AuthGate } from './auth/AuthGate';
 
 registerSW({ immediate: true });
 
@@ -13,6 +13,6 @@ void navigator.storage?.persist?.();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <AuthGate />
   </StrictMode>,
 );

@@ -8,10 +8,13 @@ export function useTasks(repo: TaskRepository) {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    repo.list().then((list) => {
-      setTasks(list);
-      setLoaded(true);
-    });
+    repo
+      .list()
+      .then((list) => {
+        setTasks(list);
+        setLoaded(true);
+      })
+      .catch(() => {}); // el error ya se avisó (sin conexión); no se muestra una lista vacía engañosa
   }, [repo]);
 
   const add = useCallback(

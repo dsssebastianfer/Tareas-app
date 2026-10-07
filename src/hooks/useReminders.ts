@@ -6,7 +6,7 @@ export function useReminders(repo: Repository<Reminder>) {
   const [reminders, setReminders] = useState<Reminder[]>([]);
 
   useEffect(() => {
-    repo.list().then(setReminders);
+    repo.list().then(setReminders).catch(() => {});
   }, [repo]);
 
   const add = useCallback(

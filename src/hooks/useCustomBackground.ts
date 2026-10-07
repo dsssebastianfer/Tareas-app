@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { deleteBackground, loadBackground, prepareImage, saveBackground } from '../lib/imageStore';
+import type { BackgroundStore } from '../data/stores';
+import { prepareImage } from '../lib/imageStore';
 
 /** Imagen de fondo propia: URL lista para CSS, y acciones para subirla o quitarla. */
-export function useCustomBackground() {
+export function useCustomBackground(store: BackgroundStore) {
   const [url, setUrl] = useState<string | null>(null);
 
   const show = useCallback((blob: Blob | undefined) => {
@@ -13,24 +14,24 @@ export function useCustomBackground() {
   }, []);
 
   useEffect(() => {
-    loadBackground().then(show).catch(() => {});
-  }, [show]);
+    store.load().then(show).catch(() => {});
+  }, [store, show]);
 
   /** Reduce, guarda y muestra la imagen. Devuelve su luminosidad (0 oscura – 1 clara). */
   const upload = useCallback(
     async (file: File) => {
       const { blob, luminance } = await prepareImage(file);
-      await saveBackground(blob);
+      await store.save(blob);
       show(blob);
       return luminance;
     },
-    [show],
+    [store, show],
   );
 
   const remove = useCallback(async () => {
-    await deleteBackground();
+    await store.remove();
     show(undefined);
-  }, [show]);
+  }, [store, show]);
 
   return { url, upload, remove };
 }

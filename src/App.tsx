@@ -4,9 +4,7 @@ import type { Category } from './domain/category';
 import { compareReminders, type Reminder } from './domain/reminder';
 import { colorForWeek, confettiColors, weekVars } from './domain/palette';
 import { addDays, getWeekKey, toDayKey } from './domain/week';
-import { localTaskRepository } from './data/localTaskRepository';
-import { localCategoryRepository } from './data/localCategoryRepository';
-import { localReminderRepository } from './data/localReminderRepository';
+import type { Backend } from './data/backend';
 import { useTasks } from './hooks/useTasks';
 import { useCategories } from './hooks/useCategories';
 import { useReminders } from './hooks/useReminders';
@@ -18,6 +16,7 @@ import { useTheme } from './hooks/useTheme';
 import { useCustomBackground } from './hooks/useCustomBackground';
 import { findBackground, BACKGROUNDS } from './domain/backgrounds';
 import { AppearanceView } from './components/AppearanceView';
+import { MigrationBanner } from './components/MigrationBanner';
 import { burstFrom, celebrate } from './lib/confetti';
 import { playCelebrate, playComplete } from './lib/sound';
 import { Sidebar, type View } from './components/Sidebar';
@@ -40,20 +39,22 @@ import { DebugTimeTravel } from './components/DebugTimeTravel'; // PRUEBA
 const HASH: Record<View, string> = { home: '', calendar: '#calendario', categories: '#categorias', appearance: '#apariencia' };
 const viewFromHash = (): View => (Object.keys(HASH) as View[]).find((v) => HASH[v] && HASH[v] === location.hash) ?? 'home';
 
-export default function App() {
+export type Account = { email: string; onSignOut: () => void };
+
+export default function App({ backend, account }: { backend: Backend; account?: Account }) {
   const now = useToday();
   const weekKey = getWeekKey(now);
   const todayKey = toDayKey(now);
   const color = colorForWeek(weekKey);
 
-  const { tasks, loaded, add, update, remove, restore } = useTasks(localTaskRepository);
-  const cats = useCategories(localCategoryRepository);
+  const { tasks, loaded, add, update, remove, restore } = useTasks(backend.tasks);
+  const cats = useCategories(backend.categories);
   const { categories } = cats;
-  const rem = useReminders(localReminderRepository);
+  const rem = useReminders(backend.reminders);
   const { toast, push, notify, undoLast, dismiss } = useUndo();
-  const [settings, setSettings] = useSettings();
+  const [settings, setSettings] = useSettings(backend.settings, backend.settingsCacheKey);
   useTheme(settings.theme);
-  const customBg = useCustomBackground();
+  const customBg = useCustomBackground(backend.background);
   const bgCss =
     settings.background === 'custom' && customBg.url
       ? `url(${customBg.url}) center / cover`
@@ -83,6 +84,27 @@ export default function App() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const stopEdit = useCallback(() => setEditingId(null), []);
   const [selectedDay, setSelectedDay] = useState(todayKey);
+  const [online, setOnline] = useState(() => navigator.onLine);
+
+  // Conexión: con cuenta, los cambios necesitan internet. Se avisa si falta o si algo no se guardó.
+  useEffect(() => {
+    let last = 0;
+    const onSyncError = () => {
+      if (Date.now() - last < 4000) return;
+      last = Date.now();
+      notify('No se pudo guardar. Revisa tu conexión.');
+    };
+    const up = () => setOnline(true);
+    const down = () => setOnline(false);
+    window.addEventListener('semanas:sync-error', onSyncError);
+    window.addEventListener('online', up);
+    window.addEventListener('offline', down);
+    return () => {
+      window.removeEventListener('semanas:sync-error', onSyncError);
+      window.removeEventListener('online', up);
+      window.removeEventListener('offline', down);
+    };
+  }, [notify]);
   const inputRef = useRef<HTMLInputElement>(null);
   const agendaInputRef = useRef<HTMLInputElement>(null);
 
@@ -287,6 +309,7 @@ export default function App() {
           name={settings.name}
           sound={settings.sound}
           onToggleSound={() => setSettings({ sound: !settings.sound })}
+          account={account}
         />
 
         <main className="min-w-0 px-4 pt-8 pb-10 sm:px-6 lg:h-full lg:overflow-y-auto lg:px-8 lg:pt-12 lg:pb-28 xl:px-10">
@@ -295,6 +318,7 @@ export default function App() {
               <Header now={now} name={settings.name} onRename={(name) => setSettings({ name })} weekKey={weekKey} color={color} />
 
               <div className="mt-8 mb-10">
+                <MigrationBanner backend={backend} />
                 <QuickAdd
                   ref={inputRef}
                   now={now}
@@ -350,6 +374,7 @@ export default function App() {
                 onGlass={(glass) => setSettings({ glass })}
                 cardGlass={settings.cardGlass}
                 onCardGlass={(cardGlass) => setSettings({ cardGlass })}
+                account={account}
               />
             </div>
           )}
@@ -397,6 +422,11 @@ export default function App() {
         now={now}
         onReopen={handleReopen}
       />
+      {backend.kind === 'cloud' && !online && (
+        <div role="status" className="fixed top-3 left-1/2 z-40 -translate-x-1/2 rounded-full px-4 py-1.5 text-sm font-bold shadow-lg" style={{ background: 'var(--ink)', color: 'var(--bg)' }}>
+          Sin conexión: los cambios no se guardarán hasta que vuelva internet
+        </div>
+      )}
       <Toast toast={toast} onUndo={undoLast} />
       {import.meta.env.DEV && <DebugTimeTravel />} {/* PRUEBA */}
     </div>

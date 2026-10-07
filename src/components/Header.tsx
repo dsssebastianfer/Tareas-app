@@ -30,7 +30,8 @@ export function Header(p: Props) {
             <input
               autoFocus
               defaultValue={p.name}
-              size={Math.max(p.name.length, 4)}
+              size={Math.max(p.name.length, 8)}
+              placeholder="tu nombre"
               onBlur={(e) => {
                 p.onRename(e.target.value.trim() || p.name);
                 setEditing(false);
@@ -44,10 +45,10 @@ export function Header(p: Props) {
               type="button"
               onClick={() => setEditing(true)}
               title="Cambiar nombre"
-              className="cursor-text italic"
+              className={`cursor-text italic ${p.name ? '' : 'opacity-50'}`}
               style={{ color: 'var(--wk-accent)' }}
             >
-              {p.name}
+              {p.name || 'tu nombre'}
             </button>
           )}
         </h1>

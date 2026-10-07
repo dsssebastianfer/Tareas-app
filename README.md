@@ -26,5 +26,13 @@ Abre http://localhost:4747 en Edge y elige **⋯ → Aplicaciones → Instalar e
 
 > Los datos se guardan en el navegador, ligados a `localhost:4747`. Por eso el puerto es fijo: no lo cambies. Los datos de desarrollo (`localhost:5173`) se guardan aparte. Si borras los datos de navegación de Edge para este sitio, se pierden las tareas.
 
-## Futuro: compartir con otras personas
-Todo el acceso a datos pasa por `src/data/TaskRepository.ts`. Para tener cuentas de usuario se agrega una implementación con Supabase (`supabaseTaskRepository.ts`) y se publica en Vercel.
+## Cuentas y nube (Supabase + Vercel)
+Con las variables de Supabase configuradas, la app pide iniciar sesión y guarda los datos de cada persona en su cuenta. Sin ellas, funciona en modo local (todo en el navegador, sin cuentas).
+
+1. **Base de datos:** en Supabase → SQL Editor, ejecuta [`supabase/schema.sql`](supabase/schema.sql) (tablas, reglas de seguridad por usuario, Storage para fondos y categorías iniciales).
+2. **Variables** (copia `.env.example` como `.env.local` en desarrollo; en Vercel, en Settings → Environment Variables):
+   - `VITE_SUPABASE_URL`: Project Settings → Data API → Project URL
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`: Project Settings → API Keys → Publishable key (**nunca** la Secret key)
+3. **Supabase → Authentication → URL Configuration:** «Site URL» = la dirección de Vercel (para los links de recuperar contraseña).
+
+Al entrar por primera vez, si el navegador tiene tareas del modo local, la app ofrece subirlas a la cuenta.

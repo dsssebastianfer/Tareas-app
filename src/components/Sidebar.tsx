@@ -1,6 +1,6 @@
 import type { ComponentType, SVGProps } from 'react';
 import { motion } from 'motion/react';
-import { CalendarIcon, HomeIcon, PaletteIcon, SoundIcon, TagIcon } from './icons';
+import { CalendarIcon, HomeIcon, LogoutIcon, PaletteIcon, SoundIcon, TagIcon } from './icons';
 
 export type View = 'home' | 'calendar' | 'categories' | 'appearance';
 
@@ -17,13 +17,16 @@ type Props = {
   name: string;
   sound: boolean;
   onToggleSound: () => void;
+  /** Con cuenta: correo y cerrar sesión. */
+  account?: { email: string; onSignOut: () => void };
 };
 
 /**
  * Menú. Escritorio ancho: columna con textos. Escritorio angosto: solo íconos.
  * Pantallas chicas: barra superior horizontal.
  */
-export function Sidebar({ view, onNavigate, name, sound, onToggleSound }: Props) {
+export function Sidebar({ view, onNavigate, name, sound, onToggleSound, account }: Props) {
+  const label = name || account?.email.split('@')[0] || 'Tú';
   return (
     <aside className="sticky top-0 z-20 flex items-center gap-2 border-b border-[var(--line)] bg-[rgb(var(--glass-rgb)/0.75)] px-3 py-2 backdrop-blur-md lg:h-full lg:flex-col lg:bg-transparent lg:backdrop-blur-none lg:items-stretch lg:gap-1 lg:border-r lg:border-b-0 lg:px-3 lg:py-6 xl:px-4">
       <div className="flex items-center gap-3 lg:mb-8 lg:justify-center lg:px-1 xl:justify-start xl:px-2">
@@ -69,9 +72,12 @@ export function Sidebar({ view, onNavigate, name, sound, onToggleSound }: Props)
           style={{ background: 'var(--wk-accent)' }}
           aria-hidden
         >
-          {name.charAt(0).toUpperCase()}
+          {label.charAt(0).toUpperCase()}
         </span>
-        <span className="hidden min-w-0 flex-1 truncate text-sm font-bold xl:block">{name}</span>
+        <span className="hidden min-w-0 flex-1 leading-tight xl:block" title={account?.email}>
+          <span className="block truncate text-sm font-bold">{label}</span>
+          {account && <span className="block truncate text-[11px] text-[var(--ink-soft)]">{account.email}</span>}
+        </span>
         <button
           type="button"
           onClick={onToggleSound}
@@ -81,6 +87,17 @@ export function Sidebar({ view, onNavigate, name, sound, onToggleSound }: Props)
         >
           <SoundIcon on={sound} />
         </button>
+        {account && (
+          <button
+            type="button"
+            onClick={account.onSignOut}
+            aria-label="Cerrar sesión"
+            title="Cerrar sesión"
+            className="grid size-9 cursor-pointer place-items-center rounded-xl text-[var(--ink-soft)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)]"
+          >
+            <LogoutIcon width={18} height={18} />
+          </button>
+        )}
       </div>
     </aside>
   );

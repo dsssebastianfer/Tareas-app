@@ -16,6 +16,7 @@ type Props = {
   onGlass: (value: number) => void;
   cardGlass: number;
   onCardGlass: (value: number) => void;
+  account?: { email: string; onSignOut: () => void };
 };
 
 const THEMES: { value: ThemePref; label: string }[] = [
@@ -133,7 +134,26 @@ export function AppearanceView(p: Props) {
           />
         </div>
       </Section>
+
+      {p.account && <AccountSection account={p.account} />}
     </div>
+  );
+}
+
+function AccountSection({ account }: { account: NonNullable<Props['account']> }) {
+  return (
+    <Section title="Cuenta" hint="Tus tareas se guardan en tu cuenta y las ves desde cualquier equipo.">
+      <div className="surface flex max-w-lg items-center justify-between gap-3 rounded-2xl px-4 py-3">
+        <span className="min-w-0 truncate text-sm font-bold">{account.email}</span>
+        <button
+          type="button"
+          onClick={account.onSignOut}
+          className="shrink-0 cursor-pointer rounded-xl px-3 py-1.5 text-sm font-bold text-[var(--ink-soft)] transition hover:bg-black/5 hover:text-[var(--ink)] dark:hover:bg-white/10"
+        >
+          Cerrar sesión
+        </button>
+      </div>
+    </Section>
   );
 }
 

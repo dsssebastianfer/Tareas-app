@@ -114,6 +114,12 @@ export const UploadIcon = (p: P) => (
   </svg>
 );
 
+export const LogoutIcon = (p: P) => (
+  <svg {...base} {...p}>
+    <path d="M14 4h3.5A1.5 1.5 0 0 1 19 5.5v13a1.5 1.5 0 0 1-1.5 1.5H14M10 16l-4-4 4-4M6 12h10" />
+  </svg>
+);
+
 export const PlusIcon = (p: P) => (
   <svg {...base} strokeWidth={2.6} {...p}>
     <path d="M12 5v14M5 12h14" />

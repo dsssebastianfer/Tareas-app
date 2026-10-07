@@ -6,7 +6,7 @@ export function useCategories(repo: Repository<Category>) {
   const [items, setItems] = useState<Category[]>([]);
 
   useEffect(() => {
-    repo.list().then(setItems);
+    repo.list().then(setItems).catch(() => {});
   }, [repo]);
 
   const categories = useMemo(() => [...items].sort((a, b) => a.order - b.order), [items]);
