@@ -1,7 +1,8 @@
+import type { ReactNode } from 'react';
 import { motion } from 'motion/react';
 import { ChevronIcon } from './icons';
 
-type Props = { done: number; pending: number; lastWeek: number; onOpen: () => void };
+type Props = { done: number; pending: number; lastWeek: number; onOpen?: () => void };
 
 const R = 40;
 const C = 2 * Math.PI * R;
@@ -14,15 +15,16 @@ export function ProgressCard({ done, pending, lastWeek, onOpen }: Props) {
     diff > 0 ? `+${diff} respecto a la semana pasada` : diff < 0 ? `${diff} respecto a la semana pasada` : 'Igual que la semana pasada';
 
   return (
-    <button
-      type="button"
+    <Wrapper
       onClick={onOpen}
-      className="surface group w-full cursor-pointer rounded-3xl p-5 text-left transition hover:-translate-y-px"
-      aria-label={`Mi progreso: ${done} completadas esta semana. Ver completadas`}
+      className={`surface group block w-full rounded-3xl p-5 text-left transition ${onOpen ? 'cursor-pointer hover:-translate-y-px' : ''}`}
+      label={`Mi progreso: ${done} completadas esta semana${onOpen ? '. Ver completadas' : ''}`}
     >
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-display text-lg font-semibold">Mi progreso</h2>
-        <ChevronIcon width={18} height={18} className="text-[var(--ink-faint)] transition group-hover:translate-x-0.5 group-hover:text-[var(--ink)]" />
+        {onOpen && (
+          <ChevronIcon width={18} height={18} className="text-[var(--ink-faint)] transition group-hover:translate-x-0.5 group-hover:text-[var(--ink)]" />
+        )}
       </div>
       <div className="flex items-center gap-4">
         <span className="relative grid size-24 shrink-0 place-items-center">
@@ -67,6 +69,19 @@ export function ProgressCard({ done, pending, lastWeek, onOpen }: Props) {
           </p>
         </div>
       </div>
+    </Wrapper>
+  );
+}
+
+/** Botón si abre algo; si no (en la pestaña Progreso), un bloque normal. */
+function Wrapper({ onClick, className, label, children }: { onClick?: () => void; className: string; label: string; children: ReactNode }) {
+  return onClick ? (
+    <button type="button" onClick={onClick} className={className} aria-label={label}>
+      {children}
     </button>
+  ) : (
+    <section className={className} aria-label={label}>
+      {children}
+    </section>
   );
 }

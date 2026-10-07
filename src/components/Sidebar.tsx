@@ -1,11 +1,13 @@
 import type { ComponentType, SVGProps } from 'react';
 import { motion } from 'motion/react';
-import { CalendarIcon, HomeIcon, InfoIcon, LogoutIcon, PaletteIcon, SoundIcon, TagIcon } from './icons';
+import { CalendarIcon, HomeIcon, InfoIcon, LogoutIcon, PaletteIcon, ProgressIcon, SoundIcon, TagIcon } from './icons';
 
-export type View = 'home' | 'calendar' | 'categories' | 'appearance';
+export type View = 'home' | 'calendar' | 'categories' | 'appearance' | 'progress';
 
-const NAV: { view: View; label: string; Icon: ComponentType<SVGProps<SVGSVGElement>> }[] = [
+const NAV: { view: View; label: string; Icon: ComponentType<SVGProps<SVGSVGElement>>; stackedOnly?: boolean }[] = [
   { view: 'home', label: 'Inicio', Icon: HomeIcon },
+  // Solo en pantallas donde la columna derecha baja bajo la lista (celular): ahí «Mi progreso» es una pestaña
+  { view: 'progress', label: 'Progreso', Icon: ProgressIcon, stackedOnly: true },
   { view: 'calendar', label: 'Calendario', Icon: CalendarIcon },
   { view: 'categories', label: 'Categorías', Icon: TagIcon },
   { view: 'appearance', label: 'Apariencia', Icon: PaletteIcon },
@@ -31,7 +33,7 @@ export function Sidebar({ view, onNavigate, name, sound, onToggleSound, account,
   return (
     <aside className="sticky top-0 z-20 flex items-center gap-2 border-b border-[var(--line)] bg-[rgb(var(--glass-rgb)/0.75)] px-3 py-2 backdrop-blur-md lg:h-full lg:flex-col lg:bg-transparent lg:backdrop-blur-none lg:items-stretch lg:gap-1 lg:border-r lg:border-b-0 lg:px-3 lg:py-6 xl:px-4">
       <div className="flex items-center gap-3 lg:mb-8 lg:justify-center lg:px-1 xl:justify-start xl:px-2">
-        <img src="/icons/logo.png" alt="" className="size-10 lg:size-11" />
+        <img src="/icons/logo.png" alt="" className="size-10 shrink-0 lg:size-11" />
         <div className="hidden leading-tight xl:block">
           <p className="font-display text-lg font-semibold">Semanas</p>
           <p className="text-xs text-[var(--ink-soft)]">Tu semana de colores</p>
@@ -39,7 +41,7 @@ export function Sidebar({ view, onNavigate, name, sound, onToggleSound, account,
       </div>
 
       <nav className="ml-auto flex gap-1 lg:ml-0 lg:flex-col" aria-label="Secciones">
-        {NAV.map(({ view: v, label, Icon }) => {
+        {NAV.map(({ view: v, label, Icon, stackedOnly }) => {
           const active = v === view;
           return (
             <button
@@ -48,7 +50,7 @@ export function Sidebar({ view, onNavigate, name, sound, onToggleSound, account,
               onClick={() => onNavigate(v)}
               aria-current={active ? 'page' : undefined}
               title={label}
-              className={`relative flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-bold transition-colors lg:justify-center xl:justify-start ${
+              className={`relative flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-bold transition-colors lg:justify-center xl:justify-start ${stackedOnly ? 'lg:hidden' : ''} ${
                 active ? 'text-[var(--ink)]' : 'text-[var(--ink-soft)] hover:text-[var(--ink)]'
               }`}
             >

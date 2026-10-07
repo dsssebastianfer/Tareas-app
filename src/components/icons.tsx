@@ -128,6 +128,14 @@ export const InfoIcon = (p: P) => (
   </svg>
 );
 
+export const ProgressIcon = (p: P) => (
+  <svg {...base} {...p}>
+    <path d="M12 3.5a8.5 8.5 0 1 1-8.5 8.5" />
+    <path d="M12 7.5a4.5 4.5 0 1 1-4.5 4.5" />
+    <circle cx="12" cy="12" r="1" fill="currentColor" stroke="none" />
+  </svg>
+);
+
 export const PlusIcon = (p: P) => (
   <svg {...base} strokeWidth={2.6} {...p}>
     <path d="M12 5v14M5 12h14" />

@@ -6,9 +6,7 @@ import { addDays, dayLabel, getWeekKey, toDayKey, weeksBetween } from '../domain
 import { Drawer } from './Drawer';
 import { ReopenIcon } from './icons';
 
-type Props = {
-  open: boolean;
-  onClose: () => void;
+type ContentProps = {
   completed: Task[];
   now: Date;
   onReopen: (task: Task) => void;
@@ -31,10 +29,9 @@ function closedIn(task: Task): string {
   return w === 1 ? 'cerrada en 1 semana' : `cerrada en ${w} semanas`;
 }
 
-export function CompletedDrawer({ open, onClose, completed, now, onReopen }: Props) {
+function useCompletedData(completed: Task[], now: Date) {
   const weekKey = getWeekKey(now);
-
-  const { groups, thisWeek, days } = useMemo(() => {
+  return useMemo(() => {
     const sorted = [...completed].sort((a, b) => b.completedAt!.localeCompare(a.completedAt!));
     const map = new Map<string, Task[]>();
     for (const t of sorted) {
@@ -47,60 +44,72 @@ export function CompletedDrawer({ open, onClose, completed, now, onReopen }: Pro
       days: streak(completed, now),
     };
   }, [completed, now, weekKey]);
+}
 
+/** Cifras (completadas esta semana, racha) y lista de completadas por día. */
+export function CompletedContent({ completed, now, onReopen, padded = false }: ContentProps & { padded?: boolean }) {
+  const { groups, thisWeek, days } = useCompletedData(completed, now);
+  const px = padded ? 'px-6' : '';
+  return (
+    <>
+      <div className={`grid grid-cols-2 gap-3 pb-5 ${px}`}>
+        <Stat value={thisWeek} label="esta semana" />
+        <Stat value={days} label={days === 1 ? 'día de racha' : 'días de racha'} />
+      </div>
+
+      <div className={padded ? 'flex-1 overflow-y-auto px-6 pb-10' : ''}>
+        {groups.length === 0 && (
+          <p className="py-10 text-center text-sm text-[var(--ink-soft)]">Aún no completas tareas. La primera siempre se siente bien ✨</p>
+        )}
+        {groups.map(([day, tasks]) => (
+          <section key={day} className="mb-6">
+            <h3 className="mb-2 text-xs font-extrabold tracking-wider text-[var(--ink-faint)] uppercase">
+              {dayLabel(new Date(tasks[0].completedAt!), now)}
+            </h3>
+            <ul className="flex flex-col gap-1.5">
+              <AnimatePresence initial={false}>
+                {tasks.map((t) => (
+                  <motion.li
+                    key={t.id}
+                    layout
+                    exit={{ opacity: 0, x: -30 }}
+                    className="wk group flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-[var(--surface)]"
+                    style={weekVars(colorForWeek(t.weekKey))}
+                  >
+                    <span className="grid size-5 shrink-0 place-items-center rounded-full" style={{ background: 'var(--wk-accent)' }}>
+                      <svg viewBox="0 0 24 24" className="size-3" fill="none">
+                        <path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-[15px] font-semibold">{t.title}</span>
+                      <span className="block text-xs text-[var(--ink-soft)]">{closedIn(t)}</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onReopen(t)}
+                      title="Volver a pendientes"
+                      aria-label={`Reabrir «${t.title}»`}
+                      // Con mouse aparece al pasar por encima; en pantallas táctiles siempre visible
+                      className="grid size-8 cursor-pointer place-items-center rounded-lg text-[var(--ink-soft)] opacity-0 transition group-hover:opacity-100 hover:bg-black/5 hover:text-[var(--ink)] focus-visible:opacity-100 dark:hover:bg-white/10 [@media(hover:none)]:opacity-70"
+                    >
+                      <ReopenIcon width={16} height={16} />
+                    </button>
+                  </motion.li>
+                ))}
+              </AnimatePresence>
+            </ul>
+          </section>
+        ))}
+      </div>
+    </>
+  );
+}
+
+export function CompletedDrawer({ open, onClose, ...content }: ContentProps & { open: boolean; onClose: () => void }) {
   return (
     <Drawer open={open} onClose={onClose} title="Completadas">
-            <div className="grid grid-cols-2 gap-3 px-6 pb-5">
-              <Stat value={thisWeek} label="esta semana" />
-              <Stat value={days} label={days === 1 ? 'día de racha' : 'días de racha'} />
-            </div>
-
-            <div className="flex-1 overflow-y-auto px-6 pb-10">
-              {groups.length === 0 && (
-                <p className="py-10 text-center text-sm text-[var(--ink-soft)]">
-                  Aún no completas tareas. La primera siempre se siente bien ✨
-                </p>
-              )}
-              {groups.map(([day, tasks]) => (
-                <section key={day} className="mb-6">
-                  <h3 className="mb-2 text-xs font-extrabold tracking-wider text-[var(--ink-faint)] uppercase">
-                    {dayLabel(new Date(tasks[0].completedAt!), now)}
-                  </h3>
-                  <ul className="flex flex-col gap-1.5">
-                    <AnimatePresence initial={false}>
-                      {tasks.map((t) => (
-                        <motion.li
-                          key={t.id}
-                          layout
-                          exit={{ opacity: 0, x: -30 }}
-                          className="wk group flex items-center gap-3 rounded-xl px-3 py-2.5 transition hover:bg-[var(--surface)]"
-                          style={weekVars(colorForWeek(t.weekKey))}
-                        >
-                          <span className="grid size-5 shrink-0 place-items-center rounded-full" style={{ background: 'var(--wk-accent)' }}>
-                            <svg viewBox="0 0 24 24" className="size-3" fill="none">
-                              <path d="M5 12.5l4.5 4.5L19 7.5" stroke="#fff" strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          </span>
-                          <span className="min-w-0 flex-1">
-                            <span className="block truncate text-[15px] font-semibold">{t.title}</span>
-                            <span className="block text-xs text-[var(--ink-soft)]">{closedIn(t)}</span>
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => onReopen(t)}
-                            title="Volver a pendientes"
-                            aria-label={`Reabrir «${t.title}»`}
-                            className="grid size-8 cursor-pointer place-items-center rounded-lg text-[var(--ink-soft)] opacity-0 transition group-hover:opacity-100 hover:bg-black/5 hover:text-[var(--ink)] focus-visible:opacity-100 dark:hover:bg-white/10"
-                          >
-                            <ReopenIcon width={16} height={16} />
-                          </button>
-                        </motion.li>
-                      ))}
-                    </AnimatePresence>
-                  </ul>
-                </section>
-              ))}
-            </div>
+      <CompletedContent {...content} padded />
     </Drawer>
   );
 }

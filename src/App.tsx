@@ -32,12 +32,18 @@ import { CategoriesView } from './components/CategoriesView';
 import { ProgressCard } from './components/ProgressCard';
 import { MiniCalendar, type DayMarks } from './components/MiniCalendar';
 import { DayAgenda } from './components/DayAgenda';
-import { CompletedDrawer } from './components/CompletedDrawer';
+import { CompletedContent, CompletedDrawer } from './components/CompletedDrawer';
 import { EmptyState } from './components/EmptyState';
 import { Toast } from './components/Toast';
 import { DebugTimeTravel } from './components/DebugTimeTravel'; // PRUEBA
 
-const HASH: Record<View, string> = { home: '', calendar: '#calendario', categories: '#categorias', appearance: '#apariencia' };
+const HASH: Record<View, string> = {
+  home: '',
+  calendar: '#calendario',
+  categories: '#categorias',
+  appearance: '#apariencia',
+  progress: '#progreso',
+};
 const viewFromHash = (): View => (Object.keys(HASH) as View[]).find((v) => HASH[v] && HASH[v] === location.hash) ?? 'home';
 
 export type Account = { email: string; onSignOut: () => void };
@@ -383,6 +389,15 @@ export default function App({ backend, account }: { backend: Backend; account?: 
             </div>
           )}
 
+          {view === 'progress' && (
+            <div className="mx-auto max-w-2xl">
+              <div className="mb-6">
+                <ProgressCard done={doneThisWeek} pending={pending.length} lastWeek={doneLastWeek} />
+              </div>
+              <CompletedContent completed={completed} now={now} onReopen={handleReopen} />
+            </div>
+          )}
+
           {view === 'categories' && (
             <div className="mx-auto max-w-2xl">
               <CategoriesView
@@ -400,7 +415,10 @@ export default function App({ backend, account }: { backend: Backend; account?: 
           aria-label="Resumen"
           className="flex flex-col gap-4 px-4 pb-28 sm:px-6 lg:h-full lg:overflow-y-auto lg:px-0 lg:pt-12 lg:pr-6 lg:pb-8"
         >
-          <ProgressCard done={doneThisWeek} pending={pending.length} lastWeek={doneLastWeek} onOpen={() => setCompletedOpen(true)} />
+          {/* En celular, «Mi progreso» vive en su propia pestaña; aquí solo en pantallas grandes */}
+          <div className="max-lg:hidden">
+            <ProgressCard done={doneThisWeek} pending={pending.length} lastWeek={doneLastWeek} onOpen={() => setCompletedOpen(true)} />
+          </div>
           {view !== 'calendar' && <MiniCalendar now={now} selected={selectedDay} onSelect={setSelectedDay} marks={dayMarks} />}
           <DayAgenda
             ref={agendaInputRef}
