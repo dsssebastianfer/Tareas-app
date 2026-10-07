@@ -72,13 +72,13 @@ export function Sidebar({ view, onNavigate, name, sound, onToggleSound, account,
         onClick={onOpenHelp}
         title="Cómo funciona"
         aria-label="Cómo funciona"
-        className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-bold text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)] lg:mt-3 lg:justify-center xl:justify-start"
+        className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-bold text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)] lg:mt-auto lg:justify-center xl:justify-start"
       >
         <InfoIcon width={20} height={20} />
         <span className="hidden xl:inline">Cómo funciona</span>
       </button>
 
-      <div className="hidden items-center gap-2 lg:mt-auto lg:flex lg:flex-col xl:flex-row xl:rounded-2xl xl:border xl:border-[var(--line)] xl:bg-[var(--surface)] xl:p-2">
+      <div className="hidden items-center gap-2 lg:mt-2 lg:flex lg:flex-col xl:flex-row xl:rounded-2xl xl:border xl:border-[var(--line)] xl:bg-[var(--surface)] xl:p-2">
         <span
           className="grid size-9 shrink-0 place-items-center rounded-full font-display text-base font-bold text-white"
           style={{ background: 'var(--wk-accent)' }}
