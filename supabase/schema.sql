@@ -93,9 +93,8 @@ begin
   on conflict (id) do nothing;
 
   insert into public.categories (user_id, name, emoji, keywords, "order") values
-    (new.id, 'CPHS', '🛡️', array['comité paritario', 'paritario'], 0),
-    (new.id, 'Reuniones', '👥', array['reunión', 'junta', 'meet'], 1),
-    (new.id, 'Procedimientos', '📋', array['procedimiento', 'protocolo', 'instructivo'], 2);
+    (new.id, 'Reuniones', '👥', array['reunión', 'junta', 'meet'], 0),
+    (new.id, 'Informes', '📝', array['informe', 'reporte', 'report'], 1);
 
   return new;
 end;
