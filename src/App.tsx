@@ -19,7 +19,7 @@ import { AppearanceView } from './components/AppearanceView';
 import { MigrationBanner } from './components/MigrationBanner';
 import { HelpDrawer } from './components/HelpDrawer';
 import { burstFrom, celebrate } from './lib/confetti';
-import { playCelebrate, playComplete } from './lib/sound';
+import { playAdd, playCelebrate, playComplete } from './lib/sound';
 import { Sidebar, type View } from './components/Sidebar';
 import { Header } from './components/Header';
 import { QuickAdd } from './components/QuickAdd';
@@ -89,6 +89,8 @@ export default function App({ backend, account }: { backend: Backend; account?: 
   }, [customBg, settings.background, selectBackground]);
   const [completedOpen, setCompletedOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  /** Tarea recién agregada: brilla un momento para que se note dónde quedó. */
+  const [freshId, setFreshId] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const stopEdit = useCallback(() => setEditingId(null), []);
   const [selectedDay, setSelectedDay] = useState(todayKey);
@@ -201,6 +203,18 @@ export default function App({ backend, account }: { backend: Backend; account?: 
     [update, pending.length, color, settings.sound, push, notify],
   );
 
+  const handleAdd = useCallback(
+    (title: string, due: string | null, categoryId: string | null) => {
+      const task = add(title, now, due, categoryId);
+      if (settings.sound) playAdd();
+      const short = title.length > 34 ? `${title.slice(0, 32)}…` : title;
+      push(`Agregada: «${short}»`, () => remove(task.id));
+      setFreshId(task.id);
+      window.setTimeout(() => setFreshId((id) => (id === task.id ? null : id)), 2200);
+    },
+    [add, now, settings.sound, push, remove],
+  );
+
   const handleDelete = useCallback(
     (task: Task) => {
       remove(task.id);
@@ -302,6 +316,7 @@ export default function App({ backend, account }: { backend: Backend; account?: 
       onSetDue={handleSetDue}
       onSetCategory={handleSetCategory}
       editing={editingId === t.id}
+      fresh={freshId === t.id}
       onStartEdit={() => setEditingId(t.id)}
       onStopEdit={stopEdit}
       onDelete={handleDelete}
@@ -336,7 +351,7 @@ export default function App({ backend, account }: { backend: Backend; account?: 
                   ref={inputRef}
                   now={now}
                   categories={categories}
-                  onAdd={(title, due, categoryId) => add(title, now, due, categoryId)}
+                  onAdd={handleAdd}
                   onManageCategories={() => setView('categories')}
                 />
               </div>

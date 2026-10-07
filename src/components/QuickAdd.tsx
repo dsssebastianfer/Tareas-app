@@ -1,10 +1,11 @@
-import { forwardRef, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'motion/react';
 import { detectCategory, stripTags, type Category } from '../domain/category';
 import { CategoryChip } from './CategoryChip';
 import { CategoryPicker } from './CategoryPicker';
 import { DueChip } from './DueChip';
 import { DuePicker } from './DuePicker';
-import { CalendarIcon, PlusIcon, TagIcon } from './icons';
+import { CalendarIcon, CheckIcon, PlusIcon, TagIcon } from './icons';
 import { useIsPhone } from '../hooks/useMediaQuery';
 
 type Props = {
@@ -27,6 +28,13 @@ export const QuickAdd = forwardRef<HTMLInputElement, Props>(function QuickAdd(
   /** undefined = automática (detectada del texto); string/null = elegida a mano. */
   const [manualCat, setManualCat] = useState<string | null | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
+  /** Momento de la última tarea agregada: el + se vuelve ✓ un instante como confirmación. */
+  const [added, setAdded] = useState(0);
+  useEffect(() => {
+    if (!added) return;
+    const t = window.setTimeout(() => setAdded(0), 900);
+    return () => window.clearTimeout(t);
+  }, [added]);
   useImperativeHandle(ref, () => inputRef.current!);
 
   const detected = useMemo(() => detectCategory(value, categories), [value, categories]);
@@ -48,22 +56,36 @@ export const QuickAdd = forwardRef<HTMLInputElement, Props>(function QuickAdd(
         setValue('');
         setDue(null);
         setManualCat(undefined);
+        setAdded(Date.now());
         refocus();
       }}
       className="surface group relative z-20 flex items-center gap-1.5 rounded-2xl py-2 pr-2 pl-2 transition-shadow focus-within:shadow-[var(--shadow-lift)] sm:gap-2 sm:pr-3 sm:pl-3"
     >
       {/* En celular: a la derecha, cerca del pulgar. En computador: a la izquierda. */}
-      <button
+      <motion.button
         type="submit"
         aria-label="Agregar tarea"
         title="Agregar tarea"
         // No quitar el foco del campo (en el celular, así no se cierra el teclado)
         onMouseDown={(e) => e.preventDefault()}
-        className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl text-white transition-transform group-focus-within:rotate-90 hover:brightness-110 active:scale-90 max-sm:order-last sm:mr-1"
+        key={added || 'idle'}
+        animate={added ? { scale: [1, 1.22, 1] } : undefined}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+        className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-xl text-white hover:brightness-110 active:scale-90 max-sm:order-last sm:mr-1"
         style={{ background: 'var(--wk-accent)' }}
       >
-        <PlusIcon />
-      </button>
+        <AnimatePresence mode="wait" initial={false}>
+          {added ? (
+            <motion.span key="ok" initial={{ scale: 0, rotate: -45 }} animate={{ scale: 1, rotate: 0 }} exit={{ scale: 0 }} transition={{ type: 'spring', stiffness: 600, damping: 22 }}>
+              <CheckIcon />
+            </motion.span>
+          ) : (
+            <motion.span key="plus" initial={{ scale: 0 }} animate={{ scale: 1 }} exit={{ scale: 0 }} className="transition-transform group-focus-within:rotate-90">
+              <PlusIcon />
+            </motion.span>
+          )}
+        </AnimatePresence>
+      </motion.button>
       <input
         ref={inputRef}
         autoFocus

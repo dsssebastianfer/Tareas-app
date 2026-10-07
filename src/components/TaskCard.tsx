@@ -21,6 +21,8 @@ type Props = {
   /** En la vista por categoría el grupo ya la indica. */
   showCategory?: boolean;
   editing: boolean;
+  /** Recién agregada: brilla un momento. */
+  fresh?: boolean;
   onStartEdit: () => void;
   onStopEdit: () => void;
   onComplete: (task: Task, origin: Element) => void;
@@ -43,6 +45,7 @@ export const TaskCard = forwardRef<HTMLLIElement, Props>(function TaskCard(
     categories,
     showCategory = true,
     editing,
+    fresh,
     onStartEdit,
     onStopEdit,
     onComplete,
@@ -157,7 +160,7 @@ export const TaskCard = forwardRef<HTMLLIElement, Props>(function TaskCard(
         onKeyDown={(e) => {
           if (e.key === 'Enter' && e.target === e.currentTarget) onStartEdit();
         }}
-        className="task-card cursor-pointer rounded-2xl py-3 pr-3 pl-3.5"
+        className={`task-card cursor-pointer rounded-2xl py-3 pr-3 pl-3.5 ${fresh ? 'task-fresh' : ''}`}
         style={editing ? { visibility: 'hidden' } : undefined}
       >
         <div className="flex items-center gap-3">

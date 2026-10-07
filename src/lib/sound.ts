@@ -31,6 +31,16 @@ export function playComplete() {
   }
 }
 
+/** Una nota corta y suave: tarea agregada. */
+export function playAdd() {
+  try {
+    const ac = audio();
+    note(ac, 660, ac.currentTime, 0.12, 0.06);
+  } catch {
+    /* audio no disponible */
+  }
+}
+
 /** Arpegio corto para cuando no queda nada pendiente. */
 export function playCelebrate() {
   try {
