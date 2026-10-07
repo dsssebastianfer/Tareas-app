@@ -1,4 +1,4 @@
-import type { ComponentType, SVGProps } from 'react';
+import { useState, type ComponentType, type SVGProps } from 'react';
 import { motion } from 'motion/react';
 import { CalendarIcon, HomeIcon, InfoIcon, LogoutIcon, PaletteIcon, ProgressIcon, SoundIcon, TagIcon } from './icons';
 
@@ -33,7 +33,7 @@ export function Sidebar({ view, onNavigate, name, sound, onToggleSound, account,
   return (
     <aside className="sticky top-0 z-20 flex items-center gap-2 border-b border-[var(--line)] bg-[rgb(var(--glass-rgb)/0.75)] px-3 py-2 backdrop-blur-md lg:h-full lg:flex-col lg:bg-transparent lg:backdrop-blur-none lg:items-stretch lg:gap-1 lg:border-r lg:border-b-0 lg:px-3 lg:py-6 xl:px-4">
       <div className="flex items-center gap-3 lg:mb-8 lg:justify-center lg:px-1 xl:justify-start xl:px-2">
-        <img src="/icons/logo.png" alt="" className="size-10 shrink-0 lg:size-11" />
+        <RefreshLogo />
         <div className="hidden leading-tight xl:block">
           <p className="font-display text-lg font-semibold">Semanas</p>
           <p className="text-xs text-[var(--ink-soft)]">Tu semana de colores</p>
@@ -114,5 +114,36 @@ export function Sidebar({ view, onNavigate, name, sound, onToggleSound, account,
         )}
       </div>
     </aside>
+  );
+}
+
+/** El logo también es el botón de actualizar: busca una versión nueva de la app y recarga la página. */
+function RefreshLogo() {
+  const [spinning, setSpinning] = useState(false);
+  const refresh = async () => {
+    if (spinning) return;
+    setSpinning(true);
+    try {
+      const reg = await navigator.serviceWorker?.getRegistration();
+      // Si hay una versión nueva publicada, que quede lista antes de recargar (sin esperar más de 1,5 s)
+      await Promise.race([reg?.update(), new Promise((r) => setTimeout(r, 1500))]);
+    } catch {
+      /* sin service worker: igual se recarga */
+    }
+    location.reload();
+  };
+  return (
+    <motion.button
+      type="button"
+      onClick={refresh}
+      title="Actualizar"
+      aria-label="Actualizar la página"
+      whileTap={{ scale: 0.9 }}
+      animate={spinning ? { rotate: 360 } : { rotate: 0 }}
+      transition={spinning ? { repeat: Infinity, duration: 0.8, ease: 'linear' } : { duration: 0 }}
+      className="shrink-0 cursor-pointer rounded-xl"
+    >
+      <img src="/icons/logo.png" alt="" className="size-10 lg:size-11" draggable={false} />
+    </motion.button>
   );
 }

@@ -155,20 +155,23 @@ export default function App({ backend, account }: { backend: Backend; account?: 
     return result;
   }, [settings.sortBy, categories, sorted]);
 
-  // Calendario: tareas pendientes con fecha + recordatorios, por día.
+  // Calendario: tareas con fecha + recordatorios, por día. Lo completado se queda (tachado), después de lo pendiente.
   const dayItems = useMemo(() => {
     const m = new Map<string, DayItems>();
     const get = (k: string) => m.get(k) ?? (m.set(k, { tasks: [], reminders: [] }), m.get(k)!);
-    for (const t of sorted) if (t.dueDate) get(t.dueDate).tasks.push(t);
-    for (const r of [...rem.reminders].sort(compareReminders)) get(r.date).reminders.push(r);
+    const doneWithDate = completed.filter((t) => t.dueDate).sort((a, b) => a.completedAt!.localeCompare(b.completedAt!));
+    for (const t of [...sorted, ...doneWithDate]) if (t.dueDate) get(t.dueDate).tasks.push(t);
+    const reminders = [...rem.reminders].sort((a, b) => Number(a.done) - Number(b.done) || compareReminders(a, b));
+    for (const r of reminders) get(r.date).reminders.push(r);
     return m;
-  }, [sorted, rem.reminders]);
+  }, [sorted, completed, rem.reminders]);
 
   const dayMarks = useMemo(() => {
     const m = new Map<string, DayMarks>();
     for (const [k, v] of dayItems) {
       m.set(k, {
-        taskColors: v.tasks.map((t) => colorForWeek(t.weekKey).light.accent),
+        // Los anillos cuentan solo lo pendiente
+        taskColors: v.tasks.filter((t) => !t.completedAt).map((t) => colorForWeek(t.weekKey).light.accent),
         reminders: v.reminders.filter((r) => !r.done).length,
       });
     }
@@ -429,6 +432,7 @@ export default function App({ backend, account }: { backend: Backend; account?: 
             reminders={dayItems.get(selectedDay)?.reminders ?? []}
             onCompleteTask={handleComplete}
             onOpenTask={openTask}
+            onReopenTask={handleReopen}
             onAddReminder={(title, time) => rem.add(title, selectedDay, time)}
             onToggleReminder={handleToggleReminder}
             onDeleteReminder={handleDeleteReminder}

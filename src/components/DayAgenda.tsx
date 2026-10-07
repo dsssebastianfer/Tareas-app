@@ -1,4 +1,4 @@
-import { forwardRef, useState } from 'react';
+import { forwardRef, useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import type { Task } from '../domain/task';
 import type { Reminder } from '../domain/reminder';
@@ -16,13 +16,14 @@ type Props = {
   reminders: Reminder[];
   onCompleteTask: (task: Task, origin: Element) => void;
   onOpenTask: (task: Task) => void;
+  onReopenTask: (task: Task) => void;
   onAddReminder: (title: string, time: string | null) => void;
   onToggleReminder: (reminder: Reminder) => void;
   onDeleteReminder: (reminder: Reminder) => void;
 };
 
 export const DayAgenda = forwardRef<HTMLInputElement, Props>(function DayAgenda(
-  { dayKey, now, tasks, overdue, reminders, onCompleteTask, onOpenTask, onAddReminder, onToggleReminder, onDeleteReminder },
+  { dayKey, now, tasks, overdue, reminders, onCompleteTask, onOpenTask, onReopenTask, onAddReminder, onToggleReminder, onDeleteReminder },
   inputRef,
 ) {
   const [title, setTitle] = useState('');
@@ -45,51 +46,21 @@ export const DayAgenda = forwardRef<HTMLInputElement, Props>(function DayAgenda(
       {/* key por día: al cambiar de día la lista se reemplaza sin cruzarse con la anterior */}
       <ul key={dayKey} className="flex flex-col gap-1">
         <AnimatePresence initial={false}>
+          {/* Pendientes arriba; lo completado/hecho después, tachado */}
           {overdue.map((t) => (
-            <TaskRow key={t.id} task={t} overdue onComplete={onCompleteTask} onOpen={onOpenTask} />
+            <TaskRow key={t.id} task={t} overdue onComplete={onCompleteTask} onOpen={onOpenTask} onReopen={onReopenTask} />
           ))}
-          {tasks.map((t) => (
-            <TaskRow key={t.id} task={t} onComplete={onCompleteTask} onOpen={onOpenTask} />
+          {tasks.filter((t) => !t.completedAt).map((t) => (
+            <TaskRow key={t.id} task={t} onComplete={onCompleteTask} onOpen={onOpenTask} onReopen={onReopenTask} />
           ))}
-          {reminders.map((r) => (
-            <motion.li
-              key={r.id}
-              layout
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, x: 24 }}
-              className="group flex items-center gap-2.5 rounded-xl px-1.5 py-1.5 hover:bg-[color-mix(in_oklab,var(--ink)_4%,transparent)]"
-            >
-              <button
-                type="button"
-                onClick={() => onToggleReminder(r)}
-                aria-pressed={r.done}
-                aria-label={r.done ? `Desmarcar «${r.title}»` : `Marcar «${r.title}» como hecho`}
-                className={`grid size-6 shrink-0 cursor-pointer place-items-center rounded-lg border-2 transition ${
-                  r.done ? 'border-transparent bg-[var(--ink-soft)] text-white' : 'border-[var(--ink-faint)] text-[var(--ink-soft)] hover:border-[var(--ink-soft)]'
-                }`}
-              >
-                {r.done ? (
-                  <svg viewBox="0 0 24 24" className="size-3.5" fill="none">
-                    <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                ) : (
-                  <BellIcon width={12} height={12} strokeWidth={2.6} />
-                )}
-              </button>
-              <span className={`min-w-0 flex-1 text-sm font-semibold break-words ${r.done ? 'text-[var(--ink-faint)] line-through' : ''}`}>
-                {r.time && <span className="mr-1.5 font-bold text-[var(--ink-soft)] tabular-nums">{r.time}</span>}
-                {r.title}
-              </span>
-              <button
-                type="button"
-                onClick={() => onDeleteReminder(r)}
-                aria-label={`Eliminar «${r.title}»`}
-                className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-lg text-[var(--ink-faint)] opacity-0 transition group-hover:opacity-100 hover:bg-black/5 hover:text-[var(--ink)] focus-visible:opacity-100 dark:hover:bg-white/10"
-              >
-                <CloseIcon width={14} height={14} />
-              </button>
-            </motion.li>
+          {reminders.filter((r) => !r.done).map((r) => (
+            <ReminderRow key={r.id} reminder={r} onToggle={onToggleReminder} onDelete={onDeleteReminder} />
+          ))}
+          {tasks.filter((t) => t.completedAt).map((t) => (
+            <TaskRow key={t.id} task={t} onComplete={onCompleteTask} onOpen={onOpenTask} onReopen={onReopenTask} />
+          ))}
+          {reminders.filter((r) => r.done).map((r) => (
+            <ReminderRow key={r.id} reminder={r} onToggle={onToggleReminder} onDelete={onDeleteReminder} />
           ))}
         </AnimatePresence>
       </ul>
@@ -139,18 +110,73 @@ export const DayAgenda = forwardRef<HTMLInputElement, Props>(function DayAgenda(
   );
 });
 
+function ReminderRow({
+  reminder: r,
+  onToggle,
+  onDelete,
+}: {
+  reminder: Reminder;
+  onToggle: (r: Reminder) => void;
+  onDelete: (r: Reminder) => void;
+}) {
+  return (
+    <motion.li
+      layout
+      initial={{ opacity: 0, y: -4 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, x: 24 }}
+      className="group flex items-center gap-2.5 rounded-xl px-1.5 py-1.5 hover:bg-[color-mix(in_oklab,var(--ink)_4%,transparent)]"
+    >
+      <button
+        type="button"
+        onClick={() => onToggle(r)}
+        aria-pressed={r.done}
+        aria-label={r.done ? `Desmarcar «${r.title}»` : `Marcar «${r.title}» como hecho`}
+        className={`grid size-6 shrink-0 cursor-pointer place-items-center rounded-lg border-2 transition ${
+          r.done ? 'border-transparent bg-[var(--ink-soft)] text-white' : 'border-[var(--ink-faint)] text-[var(--ink-soft)] hover:border-[var(--ink-soft)]'
+        }`}
+      >
+        {r.done ? (
+          <svg viewBox="0 0 24 24" className="size-3.5" fill="none">
+            <path d="M5 12.5l4.5 4.5L19 7.5" stroke="currentColor" strokeWidth={3.5} strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ) : (
+          <BellIcon width={12} height={12} strokeWidth={2.6} />
+        )}
+      </button>
+      <span className={`min-w-0 flex-1 text-sm font-semibold break-words ${r.done ? 'text-[var(--ink-faint)] line-through' : ''}`}>
+        {r.time && <span className="mr-1.5 font-bold text-[var(--ink-soft)] tabular-nums">{r.time}</span>}
+        {r.title}
+      </span>
+      <button
+        type="button"
+        onClick={() => onDelete(r)}
+        aria-label={`Eliminar «${r.title}»`}
+        className="grid size-7 shrink-0 cursor-pointer place-items-center rounded-lg text-[var(--ink-faint)] opacity-0 transition group-hover:opacity-100 hover:bg-black/5 hover:text-[var(--ink)] focus-visible:opacity-100 dark:hover:bg-white/10 [@media(hover:none)]:opacity-70"
+      >
+        <CloseIcon width={14} height={14} />
+      </button>
+    </motion.li>
+  );
+}
+
 function TaskRow({
   task,
   overdue,
   onComplete,
   onOpen,
+  onReopen,
 }: {
   task: Task;
   overdue?: boolean;
   onComplete: (task: Task, origin: Element) => void;
   onOpen: (task: Task) => void;
+  onReopen: (task: Task) => void;
 }) {
-  const [done, setDone] = useState(false);
+  const completed = !!task.completedAt;
+  const [done, setDone] = useState(completed);
+  // Si se reabre (o se completa desde otro lugar), reflejarlo
+  useEffect(() => setDone(completed), [completed]);
   return (
     <motion.li
       layout
@@ -163,8 +189,9 @@ function TaskRow({
       <span className="origin-left scale-[0.86]">
         <CheckCircle
           checked={done}
-          label={`Completar «${task.title}»`}
+          label={completed ? `Volver «${task.title}» a pendientes` : `Completar «${task.title}»`}
           onClick={() => {
+            if (completed) return onReopen(task);
             if (done) return;
             setDone(true);
             const el = document.activeElement ?? document.body;
@@ -172,14 +199,18 @@ function TaskRow({
           }}
         />
       </span>
-      <button
-        type="button"
-        onClick={() => onOpen(task)}
-        title="Abrir tarea"
-        className={`min-w-0 flex-1 cursor-pointer text-left text-sm font-semibold break-words transition ${done ? 'text-[var(--ink-faint)] line-through' : 'hover:underline'}`}
-      >
-        {task.title}
-      </button>
+      {completed ? (
+        <span className="min-w-0 flex-1 text-sm font-semibold break-words text-[var(--ink-faint)] line-through">{task.title}</span>
+      ) : (
+        <button
+          type="button"
+          onClick={() => onOpen(task)}
+          title="Abrir tarea"
+          className={`min-w-0 flex-1 cursor-pointer text-left text-sm font-semibold break-words transition ${done ? 'text-[var(--ink-faint)] line-through' : 'hover:underline'}`}
+        >
+          {task.title}
+        </button>
+      )}
       {overdue && (
         <span className="due-chip due-overdue shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold">Atrasada</span>
       )}

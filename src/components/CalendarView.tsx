@@ -80,9 +80,14 @@ export function CalendarView({ now, selected, onSelect, onAddOnDay, items }: Pro
                 const isToday = key === todayKey;
                 const isSelected = key === selected;
                 const day = items.get(key);
+                // Pendientes arriba; lo completado/hecho después, tachado
+                const tasks = day?.tasks ?? [];
+                const rems = day?.reminders ?? [];
                 const all = [
-                  ...(day?.reminders ?? []).map((r) => ({ kind: 'reminder' as const, r })),
-                  ...(day?.tasks ?? []).map((t) => ({ kind: 'task' as const, t })),
+                  ...tasks.filter((t) => !t.completedAt).map((t) => ({ kind: 'task' as const, t })),
+                  ...rems.filter((r) => !r.done).map((r) => ({ kind: 'reminder' as const, r })),
+                  ...tasks.filter((t) => t.completedAt).map((t) => ({ kind: 'task' as const, t })),
+                  ...rems.filter((r) => r.done).map((r) => ({ kind: 'reminder' as const, r })),
                 ];
                 const extra = all.length - MAX_ITEMS;
                 return (
@@ -117,7 +122,7 @@ export function CalendarView({ now, selected, onSelect, onAddOnDay, items }: Pro
                         {day && (
                           <DayRing
                             colors={ringColors(
-                              day.tasks.map((t) => colorForWeek(t.weekKey).light.accent),
+                              day.tasks.filter((t) => !t.completedAt).map((t) => colorForWeek(t.weekKey).light.accent),
                               day.reminders.filter((r) => !r.done).length,
                             )}
                             className={isToday ? '-inset-[4px]' : 'inset-0'}
@@ -143,7 +148,7 @@ export function CalendarView({ now, selected, onSelect, onAddOnDay, items }: Pro
                         it.kind === 'task' ? (
                           <li
                             key={it.t.id}
-                            className="wk truncate rounded-md px-1.5 py-0.5 text-[11.5px] leading-snug font-bold"
+                            className={`wk truncate rounded-md px-1.5 py-0.5 text-[11.5px] leading-snug font-bold ${it.t.completedAt ? 'line-through opacity-50' : ''}`}
                             style={{ ...weekVars(colorForWeek(it.t.weekKey)), background: 'var(--wk-bg)', color: 'var(--wk-ink)' }}
                             title={it.t.title}
                           >
