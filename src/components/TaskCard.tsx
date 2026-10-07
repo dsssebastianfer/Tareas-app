@@ -11,6 +11,7 @@ import { CheckCircle } from './CheckCircle';
 import { DueChip } from './DueChip';
 import { DateField } from './DateField';
 import { TrashIcon } from './icons';
+import { useLongPressDrag } from '../hooks/useLongPressDrag';
 
 type Props = {
   task: Task;
@@ -61,6 +62,15 @@ export const TaskCard = forwardRef<HTMLLIElement, Props>(function TaskCard(
   /** Si hubo arrastre, el clic que sigue no abre la edición. */
   const dragged = useRef(false);
   const controls = useAnimationControls();
+  // En el celular hay que mantener presionado para arrastrar; así deslizar hace scroll.
+  const longPress = useLongPressDrag({
+    enabled: !editing && !done,
+    onArm: () => {
+      dragged.current = true; // soltar sin moverse no abre la edición
+      void controls.start({ scale: 1.03, transition: { type: 'spring', stiffness: 500, damping: 25 } });
+    },
+    onRelease: () => void controls.start({ scale: 1 }),
+  });
   const age = weeksBetween(task.weekKey, currentWeekKey);
   const due = task.dueDate ?? null;
   const category = categories.find((c) => c.id === task.categoryId) ?? null;
@@ -109,13 +119,21 @@ export const TaskCard = forwardRef<HTMLLIElement, Props>(function TaskCard(
     <Reorder.Item
       ref={ref}
       value={task.id}
-      dragListener={!editing && !done}
-      onPointerDown={() => (dragged.current = false)}
+      dragListener={false}
+      dragControls={longPress.dragControls}
+      {...longPress.handlers}
+      onPointerDown={(e) => {
+        dragged.current = false;
+        longPress.handlers.onPointerDown(e);
+      }}
       onDragStart={() => {
         dragged.current = true;
         onDragStart?.(task.id);
       }}
-      onDragEnd={() => onDragEnd?.()}
+      onDragEnd={() => {
+        longPress.release();
+        onDragEnd?.();
+      }}
       whileDrag={{ scale: 1.025, filter: 'drop-shadow(0 16px 20px rgb(40 25 10 / 0.22))' }}
       initial={{ opacity: 0, y: -10, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}

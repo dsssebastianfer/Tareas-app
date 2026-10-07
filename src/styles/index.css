@@ -166,6 +166,10 @@ body {
 }
 
 .task-card {
+  /* Mantener presionado (para arrastrar en el celular) no debe seleccionar texto ni abrir el menú del sistema */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
   /* Las tarjetas de tarea siguen el mismo control, un poco más sólidas para conservar su color de semana */
   background: color-mix(in oklab, var(--wk-bg) calc((0.4 + var(--card-glass) * 0.6) * 100%), transparent);
   backdrop-filter: blur(10px);
