@@ -1,6 +1,6 @@
 import type { ComponentType, SVGProps } from 'react';
 import { motion } from 'motion/react';
-import { CalendarIcon, HomeIcon, LogoutIcon, PaletteIcon, SoundIcon, TagIcon } from './icons';
+import { CalendarIcon, HomeIcon, InfoIcon, LogoutIcon, PaletteIcon, SoundIcon, TagIcon } from './icons';
 
 export type View = 'home' | 'calendar' | 'categories' | 'appearance';
 
@@ -19,13 +19,14 @@ type Props = {
   onToggleSound: () => void;
   /** Con cuenta: correo y cerrar sesión. */
   account?: { email: string; onSignOut: () => void };
+  onOpenHelp: () => void;
 };
 
 /**
  * Menú. Escritorio ancho: columna con textos. Escritorio angosto: solo íconos.
  * Pantallas chicas: barra superior horizontal.
  */
-export function Sidebar({ view, onNavigate, name, sound, onToggleSound, account }: Props) {
+export function Sidebar({ view, onNavigate, name, sound, onToggleSound, account, onOpenHelp }: Props) {
   const label = name || account?.email.split('@')[0] || 'Tú';
   return (
     <aside className="sticky top-0 z-20 flex items-center gap-2 border-b border-[var(--line)] bg-[rgb(var(--glass-rgb)/0.75)] px-3 py-2 backdrop-blur-md lg:h-full lg:flex-col lg:bg-transparent lg:backdrop-blur-none lg:items-stretch lg:gap-1 lg:border-r lg:border-b-0 lg:px-3 lg:py-6 xl:px-4">
@@ -65,6 +66,17 @@ export function Sidebar({ view, onNavigate, name, sound, onToggleSound, account 
           );
         })}
       </nav>
+
+      <button
+        type="button"
+        onClick={onOpenHelp}
+        title="Cómo funciona"
+        aria-label="Cómo funciona"
+        className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] font-bold text-[var(--ink-soft)] transition-colors hover:text-[var(--ink)] lg:mt-3 lg:justify-center xl:justify-start"
+      >
+        <InfoIcon width={20} height={20} />
+        <span className="hidden xl:inline">Cómo funciona</span>
+      </button>
 
       <div className="hidden items-center gap-2 lg:mt-auto lg:flex lg:flex-col xl:flex-row xl:rounded-2xl xl:border xl:border-[var(--line)] xl:bg-[var(--surface)] xl:p-2">
         <span

@@ -17,6 +17,7 @@ import { useCustomBackground } from './hooks/useCustomBackground';
 import { findBackground, BACKGROUNDS } from './domain/backgrounds';
 import { AppearanceView } from './components/AppearanceView';
 import { MigrationBanner } from './components/MigrationBanner';
+import { HelpDrawer } from './components/HelpDrawer';
 import { burstFrom, celebrate } from './lib/confetti';
 import { playCelebrate, playComplete } from './lib/sound';
 import { Sidebar, type View } from './components/Sidebar';
@@ -81,6 +82,7 @@ export default function App({ backend, account }: { backend: Backend; account?: 
     if (settings.background === 'custom') selectBackground(BACKGROUNDS[0].id);
   }, [customBg, settings.background, selectBackground]);
   const [completedOpen, setCompletedOpen] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const stopEdit = useCallback(() => setEditingId(null), []);
   const [selectedDay, setSelectedDay] = useState(todayKey);
@@ -273,6 +275,7 @@ export default function App({ backend, account }: { backend: Backend; account?: 
     escape: () => {
       if (editingId) setEditingId(null);
       else if (completedOpen) setCompletedOpen(false);
+      else if (helpOpen) setHelpOpen(false);
       else dismiss();
     },
   });
@@ -310,6 +313,7 @@ export default function App({ backend, account }: { backend: Backend; account?: 
           sound={settings.sound}
           onToggleSound={() => setSettings({ sound: !settings.sound })}
           account={account}
+          onOpenHelp={() => setHelpOpen(true)}
         />
 
         <main className="min-w-0 px-4 pt-8 pb-10 sm:px-6 lg:h-full lg:overflow-y-auto lg:px-8 lg:pt-12 lg:pb-28 xl:px-10">
@@ -427,6 +431,7 @@ export default function App({ backend, account }: { backend: Backend; account?: 
           Sin conexión: los cambios no se guardarán hasta que vuelva internet
         </div>
       )}
+      <HelpDrawer open={helpOpen} onClose={() => setHelpOpen(false)} />
       <Toast toast={toast} onUndo={undoLast} />
       {import.meta.env.DEV && <DebugTimeTravel />} {/* PRUEBA */}
     </div>
