@@ -6,9 +6,9 @@ export type View = 'home' | 'calendar' | 'categories' | 'appearance' | 'progress
 
 const NAV: { view: View; label: string; Icon: ComponentType<SVGProps<SVGSVGElement>>; stackedOnly?: boolean }[] = [
   { view: 'home', label: 'Inicio', Icon: HomeIcon },
+  { view: 'calendar', label: 'Calendario', Icon: CalendarIcon },
   // Solo en pantallas donde la columna derecha baja bajo la lista (celular): ahí «Mi progreso» es una pestaña
   { view: 'progress', label: 'Progreso', Icon: ProgressIcon, stackedOnly: true },
-  { view: 'calendar', label: 'Calendario', Icon: CalendarIcon },
   { view: 'categories', label: 'Categorías', Icon: TagIcon },
   { view: 'appearance', label: 'Apariencia', Icon: PaletteIcon },
 ];
