@@ -1,0 +1,34 @@
+{
+  "name": "semanas",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "app": "npm run build && vite preview",
+    "icons": "node scripts/icons.mjs",
+    "bg": "node scripts/backgrounds.mjs"
+  },
+  "dependencies": {
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/nunito": "^5.3.0",
+    "canvas-confetti": "^1.9.4",
+    "motion": "^14.0.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "sharp": "^0.35.5",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.3",
+    "vite-plugin-pwa": "^2.0.0"
+  }
+}

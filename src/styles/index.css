@@ -1,0 +1,274 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-display: 'Fraunces Variable', Georgia, serif;
+  --font-sans: 'Nunito Variable', system-ui, sans-serif;
+}
+
+:root {
+  color-scheme: light;
+  --bg: #f6efe4;
+  --bg-2: #efe3d2;
+  --ink: #2f2a26;
+  --ink-soft: #6f645b;
+  --ink-faint: #9a8e84;
+  /* Panel de vidrio: color base (la opacidad viene de --glass, que define el usuario) */
+  --glass-rgb: 250 245 237;
+  --glass: 0.72;
+  --glass-border: rgb(255 255 255 / 0.5);
+  /* El vidrio claro aclara lo que hay detrás; el oscuro lo apaga */
+  /* Elementos flotantes (calendario, tarjetas…): color base; la opacidad viene de --card-glass */
+  --surface-rgb: 255 253 249;
+  --card-glass: 0.75;
+  --surface: rgb(var(--surface-rgb) / 0.5);
+  --surface-strong: #fffaf3;
+  --line: rgb(70 45 20 / 0.1);
+  --shadow: 0 1px 2px rgb(70 45 20 / 0.05), 0 6px 18px -8px rgb(70 45 20 / 0.18);
+  --shadow-lift: 0 2px 4px rgb(70 45 20 / 0.06), 0 14px 30px -12px rgb(70 45 20 / 0.28);
+  --grain-opacity: 0.25;
+  --grain-blend: multiply;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #1d1a22;
+  --bg-2: #241e2a;
+  --ink: #f2ebe3;
+  --ink-soft: #b9afb7;
+  --ink-faint: #857a86;
+  --glass-rgb: 26 23 31;
+  --glass-border: rgb(255 255 255 / 0.1);
+  --surface-rgb: 44 38 51;
+  --surface: rgb(255 255 255 / 0.06);
+  --surface-strong: #2a2430;
+  --line: rgb(255 255 255 / 0.09);
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 20px -10px rgb(0 0 0 / 0.6);
+  --shadow-lift: 0 2px 4px rgb(0 0 0 / 0.35), 0 16px 34px -12px rgb(0 0 0 / 0.7);
+  --grain-opacity: 0.12;
+  --grain-blend: soft-light;
+}
+
+/* Las clases dark: de Tailwind siguen al tema elegido, no al sistema */
+@custom-variant dark (&:where([data-theme='dark'], [data-theme='dark'] *));
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Colores de semana: cada .wk recibe sus variables desde weekVars() */
+.wk {
+  --wk-bg: var(--wk-bg-l);
+  --wk-border: var(--wk-border-l);
+  --wk-ink: var(--wk-ink-l);
+  --wk-accent: var(--wk-accent-l);
+}
+[data-theme='dark'] .wk,
+.wk[data-theme='dark'] {
+  --wk-bg: var(--wk-bg-d);
+  --wk-border: var(--wk-border-d);
+  --wk-ink: var(--wk-ink-d);
+  --wk-accent: var(--wk-accent-d);
+}
+
+.app {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+/* Fondo elegido por el usuario (imagen o degradado) + velo con el color de la semana */
+.app-bg {
+  position: fixed;
+  inset: 0;
+  background: var(--app-bg, var(--bg));
+  transition: background 0.4s;
+}
+.app-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(60rem 40rem at 0% 0%, color-mix(in oklab, var(--wk-accent) 16%, transparent), transparent 60%),
+    radial-gradient(50rem 40rem at 100% 100%, color-mix(in oklab, var(--wk-accent) 10%, transparent), transparent 60%);
+}
+
+/* Panel de vidrio que flota sobre el fondo */
+.shell {
+  position: relative;
+  margin: 8px;
+  height: calc(100dvh - 16px);
+  border-radius: 20px;
+  background: rgb(var(--glass-rgb) / var(--glass));
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 0.25) inset,
+    0 30px 80px -24px rgb(0 0 0 / 0.5);
+  overflow: hidden;
+}
+/* El difuminado del panel vive en una capa propia (::after) y no en .shell: si estuviera en .shell,
+   los elementos flotantes de adentro no podrían difuminar la foto (el navegador corta su «backdrop»). */
+.shell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  /* Difuminado y brillo crecen con --glass (el deslizador): en 0 el panel es completamente transparente */
+  backdrop-filter: blur(calc(var(--glass) * 38px)) saturate(calc(1 + var(--glass) * 0.5)) brightness(calc(1 + var(--glass) * 0.4));
+  -webkit-backdrop-filter: blur(calc(var(--glass) * 38px)) saturate(calc(1 + var(--glass) * 0.5)) brightness(calc(1 + var(--glass) * 0.4));
+}
+[data-theme='dark'] .shell::after {
+  backdrop-filter: blur(calc(var(--glass) * 38px)) saturate(calc(1 + var(--glass) * 0.25)) brightness(calc(1 - var(--glass) * 0.25));
+  -webkit-backdrop-filter: blur(calc(var(--glass) * 38px)) saturate(calc(1 + var(--glass) * 0.25)) brightness(calc(1 - var(--glass) * 0.25));
+}
+.shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: var(--grain-blend);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .35 0 0 0 0 .25 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+/* Capas del panel: vidrio (::after) y grano (::before) abajo; el contenido (.shell > *) encima */
+.shell > * {
+  position: relative;
+  z-index: 1;
+}
+@media (min-width: 640px) {
+  .shell {
+    /* Ancho justo para el contenido; en pantallas anchas, a los lados se ve el fondo */
+    width: calc(100% - 40px);
+    max-width: 1440px;
+    margin: 20px auto;
+    height: calc(100dvh - 40px);
+    border-radius: 28px;
+  }
+}
+
+/* Scroll discreto dentro del panel */
+.shell * {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--ink) 22%, transparent) transparent;
+}
+
+.surface {
+  /* --card-glass lo define el usuario (30 % a sólido): nunca llega a transparente */
+  background: rgb(var(--surface-rgb) / var(--card-glass));
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(14px) saturate(1.2);
+  -webkit-backdrop-filter: blur(14px) saturate(1.2);
+}
+
+.task-card {
+  /* Las tarjetas de tarea siguen el mismo control, un poco más sólidas para conservar su color de semana */
+  background: color-mix(in oklab, var(--wk-bg) calc((0.4 + var(--card-glass) * 0.6) * 100%), transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--wk-border);
+  color: var(--wk-ink);
+  box-shadow: var(--shadow);
+  transition:
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+.task-card:hover {
+  box-shadow: var(--shadow-lift);
+  transform: translateY(-1px);
+}
+
+.task-title {
+  text-decoration-line: line-through;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 2px;
+  transition:
+    text-decoration-color 0.35s,
+    opacity 0.35s;
+}
+.task-title[data-done='true'] {
+  text-decoration-color: currentColor;
+  opacity: 0.55;
+}
+
+/* Categoría: chip neutro, no compite con el color de la semana */
+.cat-chip {
+  background: color-mix(in oklab, var(--surface-strong) 70%, transparent);
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+
+/* Fecha límite: el tono indica la urgencia */
+.due-overdue {
+  background: #fde2e1;
+  color: #b4232b;
+  box-shadow: inset 0 0 0 1px #f5b5b2;
+}
+.due-today {
+  background: var(--wk-accent);
+  color: #fff;
+}
+.due-soon {
+  background: color-mix(in oklab, var(--wk-accent) 24%, transparent);
+  color: var(--wk-ink);
+}
+.due-later {
+  background: color-mix(in oklab, var(--wk-ink) 7%, transparent);
+  color: var(--wk-ink);
+}
+[data-theme='dark'] .due-overdue {
+  background: #4a2326;
+  color: #ffadb0;
+  box-shadow: inset 0 0 0 1px #6e3337;
+}
+
+.task-card-editing,
+.task-card-editing:hover {
+  /* Sólida: flota sobre otras tarjetas y no debe dejarlas ver */
+  background: var(--wk-bg);
+  box-shadow:
+    var(--shadow-lift),
+    0 24px 48px -16px rgb(40 25 10 / 0.3);
+}
+
+/* Opciones dentro de la tarjeta abierta */
+.opt {
+  background: color-mix(in oklab, var(--wk-ink) 8%, transparent);
+  color: var(--wk-ink);
+}
+.opt:hover {
+  background: color-mix(in oklab, var(--wk-ink) 14%, transparent);
+}
+.opt-selected {
+  background: var(--wk-accent);
+  color: #fff;
+}
+
+.kbd {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.4rem;
+  border: 1px solid var(--line);
+  background: var(--surface-strong);
+  color: var(--ink-soft);
+}
+
+@layer base {
+  :focus-visible {
+    outline: 2px solid var(--wk-accent, #f08a4b);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+  }
+}
