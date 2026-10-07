@@ -9,9 +9,11 @@ type Props = {
   onRemove?: () => void;
   size?: 'sm' | 'md';
   disabled?: boolean;
+  /** En celular, mostrar solo el emoji (para dejar espacio al texto). */
+  compactOnPhone?: boolean;
 };
 
-export function CategoryChip({ category, onClick, onRemove, size = 'sm', disabled }: Props) {
+export function CategoryChip({ category, onClick, onRemove, size = 'sm', disabled, compactOnPhone }: Props) {
   const text = size === 'sm' ? 'text-xs py-0.5' : 'text-[13px] py-1.5';
   return (
     <motion.span
@@ -26,11 +28,12 @@ export function CategoryChip({ category, onClick, onRemove, size = 'sm', disable
           type="button"
           onClick={onClick}
           disabled={disabled}
-          title="Cambiar categoría"
+          title={`Categoría: ${category.name}`}
+          aria-label={`Categoría: ${category.name}. Cambiar`}
           className={`inline-flex cursor-pointer items-center gap-1 pl-2.5 disabled:cursor-default ${onRemove ? 'pr-1' : 'pr-2.5'}`}
         >
           <span aria-hidden>{category.emoji}</span>
-          {category.name}
+          <span className={compactOnPhone ? 'max-sm:hidden' : ''}>{category.name}</span>
         </button>
       ) : (
         <span className="inline-flex items-center gap-1 px-2.5">
