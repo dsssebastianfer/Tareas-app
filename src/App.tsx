@@ -140,6 +140,19 @@ export default function App({ backend, account }: { backend: Backend; account?: 
   // Orden personal (arrastrando). Por defecto, lo más antiguo arriba y lo recién anotado al final.
   const sorted = useMemo(() => [...pending].sort((a, b) => a.order - b.order), [pending]);
 
+  // Próximos días: vencen hoy, mañana o pasado mañana (o ya vencieron). Van arriba, la más urgente primero.
+  const soonLimit = toDayKey(addDays(now, 2));
+  const isSoon = useCallback((t: Task) => !!t.dueDate && t.dueDate <= soonLimit, [soonLimit]);
+  const urgentFirst = useCallback(
+    (list: Task[]) => [
+      ...list.filter(isSoon).sort((a, b) => a.dueDate!.localeCompare(b.dueDate!) || a.order - b.order),
+      ...list.filter((t) => !isSoon(t)),
+    ],
+    [isSoon],
+  );
+  const soon = useMemo(() => urgentFirst(sorted).filter(isSoon), [sorted, urgentFirst, isSoon]);
+  const rest = useMemo(() => sorted.filter((t) => !isSoon(t)), [sorted, isSoon]);
+
   const counts = useMemo(() => {
     const m = new Map<string, number>();
     for (const t of pending) if (t.categoryId) m.set(t.categoryId, (m.get(t.categoryId) ?? 0) + 1);
@@ -150,12 +163,12 @@ export default function App({ backend, account }: { backend: Backend; account?: 
     if (settings.sortBy !== 'category') return [];
     const known = new Set(categories.map((c) => c.id));
     const result: Group[] = categories
-      .map((c) => ({ key: c.id, title: c.name, emoji: c.emoji, tasks: sorted.filter((t) => t.categoryId === c.id) }))
+      .map((c) => ({ key: c.id, title: c.name, emoji: c.emoji, tasks: urgentFirst(sorted.filter((t) => t.categoryId === c.id)) }))
       .filter((g) => g.tasks.length > 0);
-    const loose = sorted.filter((t) => !t.categoryId || !known.has(t.categoryId));
+    const loose = urgentFirst(sorted.filter((t) => !t.categoryId || !known.has(t.categoryId)));
     if (loose.length) result.push({ key: 'none', title: 'Sin categoría', emoji: '·', tasks: loose });
     return result;
-  }, [settings.sortBy, categories, sorted]);
+  }, [settings.sortBy, categories, sorted, urgentFirst]);
 
   // Calendario: tareas con fecha + recordatorios, por día. Lo completado se queda (tachado), después de lo pendiente.
   const dayItems = useMemo(() => {
@@ -370,7 +383,29 @@ export default function App({ backend, account }: { backend: Backend; account?: 
                     </div>
 
                     {settings.sortBy === 'week' ? (
-                      <SortableTaskList tasks={sorted} renderCard={renderCard} onMove={handleMove} />
+                      <div className="flex flex-col gap-7">
+                        {soon.length > 0 && (
+                          <section aria-label="Próximos días">
+                            <h3 className="mb-2.5 flex items-center gap-2 px-1 text-[15px] font-extrabold">
+                              <span aria-hidden>⏰</span> Próximos días
+                              <span className="text-sm font-bold text-[var(--ink-faint)] tabular-nums">{soon.length}</span>
+                              <span className="text-xs font-semibold text-[var(--ink-soft)]">· hoy, mañana y pasado</span>
+                            </h3>
+                            <SortableTaskList tasks={soon} renderCard={renderCard} onMove={handleMove} />
+                          </section>
+                        )}
+                        {rest.length > 0 && (
+                          <section aria-label="Lo demás">
+                            {soon.length > 0 && (
+                              <h3 className="mb-2.5 flex items-center gap-2 px-1 text-[15px] font-extrabold">
+                                Lo demás
+                                <span className="text-sm font-bold text-[var(--ink-faint)] tabular-nums">{rest.length}</span>
+                              </h3>
+                            )}
+                            <SortableTaskList tasks={rest} renderCard={renderCard} onMove={handleMove} />
+                          </section>
+                        )}
+                      </div>
                     ) : (
                       <CategoryGroups
                         groups={groups}
