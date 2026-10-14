@@ -186,7 +186,7 @@ function TaskRow({
       className="wk flex items-center gap-2.5 rounded-xl px-1.5 py-1.5 hover:bg-[color-mix(in_oklab,var(--ink)_4%,transparent)]"
       style={weekVars(colorForWeek(task.weekKey))}
     >
-      <span className="origin-left scale-[0.86]">
+      <span className="origin-left scale-[0.86] max-sm:order-last max-sm:origin-right">
         <CheckCircle
           checked={done}
           label={completed ? `Volver «${task.title}» a pendientes` : `Completar «${task.title}»`}

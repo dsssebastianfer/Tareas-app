@@ -164,7 +164,9 @@ export const TaskCard = forwardRef<HTMLLIElement, Props>(function TaskCard(
         style={editing ? { visibility: 'hidden' } : undefined}
       >
         <div className="flex items-center gap-3">
-          <CheckCircle ref={checkRef} checked={done} onClick={complete} label={`Completar «${task.title}»`} />
+          <span className="flex max-sm:order-last">
+            <CheckCircle ref={checkRef} checked={done} onClick={complete} label={`Completar «${task.title}»`} />
+          </span>
           <div className="min-w-0 flex-1">
             <span data-done={done} className="task-title block text-[15px] leading-snug font-semibold break-words">
               {task.title}
@@ -193,7 +195,9 @@ export const TaskCard = forwardRef<HTMLLIElement, Props>(function TaskCard(
             className="task-card task-card-editing absolute inset-x-0 top-0 origin-top rounded-2xl py-3 pr-3 pl-3.5"
           >
             <div className="flex items-center gap-3">
-              <CheckCircle checked={false} onClick={complete} label={`Completar «${task.title}»`} />
+              <span className="flex max-sm:order-last">
+                <CheckCircle checked={false} onClick={complete} label={`Completar «${task.title}»`} />
+              </span>
               <input
                 autoFocus
                 value={draft}
@@ -210,7 +214,7 @@ export const TaskCard = forwardRef<HTMLLIElement, Props>(function TaskCard(
                 className="min-w-0 flex-1 rounded-lg bg-white/55 px-2 py-1 text-[15px] font-semibold outline-none dark:bg-black/20"
               />
             </div>
-          <div className="mt-3 flex flex-col gap-3 border-t pt-3 pl-10" style={{ borderColor: 'var(--wk-border)' }}>
+          <div className="mt-3 flex flex-col gap-3 border-t pt-3 pl-10 max-sm:pl-0" style={{ borderColor: 'var(--wk-border)' }}>
             {categories.length > 0 && (
               <Field label="Categoría">
                 {categories.map((c) => {
