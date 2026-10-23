@@ -1,6 +1,6 @@
-/** Colores del anillo de un día: uno por tarea (color de su semana) y gris por cada recordatorio pendiente. */
-export function ringColors(taskColors: string[], reminders: number): string[] {
-  return [...taskColors, ...Array<string>(reminders).fill('var(--ink-soft)')].slice(0, 6);
+/** Colores del anillo de un día: uno por tarea pendiente (color de su semana). */
+export function ringColors(taskColors: string[]): string[] {
+  return taskColors.slice(0, 6);
 }
 
 const RING_MASK = 'radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px))';

@@ -6,7 +6,7 @@ import { ChevronIcon } from './icons';
 import { DayRing, ringColors } from './DayRing';
 
 /** Marcas de un día: colores de las tareas (por su semana) y si hay recordatorios. */
-export type DayMarks = { taskColors: string[]; reminders: number };
+export type DayMarks = { taskColors: string[] };
 
 type Props = {
   now: Date;
@@ -77,7 +77,7 @@ export function MiniCalendar({ now, selected, onSelect, marks }: Props) {
                   }
                 >
                   {d.getDate()}
-                  {m && <DayRing colors={ringColors(m.taskColors, m.reminders)} className={isSelected ? '-inset-[4px]' : 'inset-0'} />}
+                  {m && <DayRing colors={ringColors(m.taskColors)} className={isSelected ? '-inset-[4px]' : 'inset-0'} />}
                 </button>
               );
             })}

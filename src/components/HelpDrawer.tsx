@@ -3,7 +3,7 @@ import { PALETTE, weekVars } from '../domain/palette';
 import { AgeBadge } from './AgeBadge';
 import { DayRing } from './DayRing';
 import { Drawer } from './Drawer';
-import { BellIcon, PinIcon, GripIcon } from './icons';
+import { PinIcon, GripIcon } from './icons';
 
 type Props = { open: boolean; onClose: () => void };
 
@@ -73,8 +73,8 @@ export function HelpDrawer({ open, onClose }: Props) {
                 </span>
               </>,
               <>Toca un día para ver su <b>agenda</b> en la columna derecha. Si es hoy, también verás las tareas <b>atrasadas</b>.</>,
-              <>En la agenda puedes agregar <b>recordatorios</b> <BellIcon width={14} height={14} className="inline align-[-2px]" /> con hora opcional: cumpleaños, citas, cosas que no son tareas.</>,
-              <>En la sección <b>Calendario</b> ves el mes completo. El botón <b>+</b> de cada día te lleva directo a agregar un recordatorio.</>,
+              <>En la agenda de cada día puedes agregar <b>actividades</b> <PinIcon width={14} height={14} className="inline align-[-2px]" /> directo en ese día: reuniones, visitas, cumpleaños.</>,
+              <>En la sección <b>Calendario</b> ves el mes completo. El botón <b>+</b> de cada día te lleva directo a agregar una actividad.</>,
             ]}
           />
         </Section>

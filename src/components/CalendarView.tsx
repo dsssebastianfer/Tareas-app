@@ -1,35 +1,36 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { motion } from 'motion/react';
 import { isActivity, type Task } from '../domain/task';
-import type { Reminder } from '../domain/reminder';
 import { longDayLabel, monthOf, monthTitle, monthWeeks, shiftMonth, WEEKDAYS_LONG, type MonthRef } from '../domain/calendar';
 import { dueInfo } from '../domain/due';
 import { colorForWeek, weekVars } from '../domain/palette';
 import { getWeekKey, parseDayKey, toDayKey } from '../domain/week';
-import { BellIcon, ChevronIcon, PinIcon, PlusIcon } from './icons';
+import { ChevronIcon, PinIcon, PlusIcon } from './icons';
 import { DayRing, ringColors } from './DayRing';
 import { SortableTaskList } from './SortableTaskList';
 
 type Drag = { onDragStart: (id: string) => void; onDragEnd: () => void };
 
-export type DayItems = { tasks: Task[]; reminders: Reminder[] };
+export type DayItems = { tasks: Task[] };
 
 type Props = {
   now: Date;
   selected: string;
   onSelect: (dayKey: string) => void;
-  /** Elegir el día y llevar el foco a «Agregar recordatorio». */
+  /** Elegir el día y llevar el foco a «Nueva actividad». */
   onAddOnDay: (dayKey: string) => void;
   items: Map<string, DayItems>;
   /** Actividades pendientes, por fecha: se listan todas bajo el mes. */
   activities: Task[];
   renderActivity: (task: Task, drag: Drag) => ReactNode;
   onMove: (task: Task, order: number) => void;
+  /** Agenda del día elegido, bajo el mes (solo en celular; en pantallas grandes va en la columna derecha). */
+  agenda: ReactNode;
 };
 
 const MAX_ITEMS = 3;
 
-export function CalendarView({ now, selected, onSelect, onAddOnDay, items, activities, renderActivity, onMove }: Props) {
+export function CalendarView({ now, selected, onSelect, onAddOnDay, items, activities, renderActivity, onMove, agenda }: Props) {
   const [month, setMonth] = useState<MonthRef>(() => monthOf(parseDayKey(selected)));
   const todayKey = toDayKey(now);
   const weeks = monthWeeks(month);
@@ -88,15 +89,9 @@ export function CalendarView({ now, selected, onSelect, onAddOnDay, items, activ
                 const isToday = key === todayKey;
                 const isSelected = key === selected;
                 const day = items.get(key);
-                // Pendientes arriba; lo completado/hecho después, tachado
+                // Pendientes arriba; lo completado después, tachado
                 const tasks = day?.tasks ?? [];
-                const rems = day?.reminders ?? [];
-                const all = [
-                  ...tasks.filter((t) => !t.completedAt).map((t) => ({ kind: 'task' as const, t })),
-                  ...rems.filter((r) => !r.done).map((r) => ({ kind: 'reminder' as const, r })),
-                  ...tasks.filter((t) => t.completedAt).map((t) => ({ kind: 'task' as const, t })),
-                  ...rems.filter((r) => r.done).map((r) => ({ kind: 'reminder' as const, r })),
-                ];
+                const all = [...tasks.filter((t) => !t.completedAt), ...tasks.filter((t) => t.completedAt)];
                 const extra = all.length - MAX_ITEMS;
                 return (
                   <div
@@ -129,10 +124,7 @@ export function CalendarView({ now, selected, onSelect, onAddOnDay, items, activ
                         {d.getDate()}
                         {day && (
                           <DayRing
-                            colors={ringColors(
-                              day.tasks.filter((t) => !t.completedAt).map((t) => colorForWeek(t.weekKey).light.accent),
-                              day.reminders.filter((r) => !r.done).length,
-                            )}
+                            colors={ringColors(day.tasks.filter((t) => !t.completedAt).map((t) => colorForWeek(t.weekKey).light.accent))}
                             className={isToday ? '-inset-[4px]' : 'inset-0'}
                           />
                         )}
@@ -143,40 +135,26 @@ export function CalendarView({ now, selected, onSelect, onAddOnDay, items, activ
                           e.stopPropagation();
                           onAddOnDay(key);
                         }}
-                        aria-label="Agregar recordatorio este día"
-                        title="Agregar recordatorio"
-                        className="grid size-6 cursor-pointer place-items-center rounded-lg text-[var(--ink-soft)] opacity-0 transition group-hover:opacity-100 hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] focus-visible:opacity-100"
+                        aria-label="Agregar actividad este día"
+                        title="Agregar actividad"
+                        className="grid size-6 cursor-pointer place-items-center rounded-lg text-[var(--ink-soft)] opacity-0 transition group-hover:opacity-100 hover:bg-[color-mix(in_oklab,var(--ink)_8%,transparent)] focus-visible:opacity-100 max-sm:hidden"
                       >
                         <PlusIcon width={14} height={14} />
                       </button>
                     </div>
 
                     <ul className="hidden flex-col gap-0.5 sm:flex">
-                      {all.slice(0, MAX_ITEMS).map((it) =>
-                        it.kind === 'task' ? (
-                          <li
-                            key={it.t.id}
-                            className={`wk truncate rounded-md px-1.5 py-0.5 text-[11.5px] leading-snug font-bold ${it.t.completedAt ? 'line-through opacity-50' : ''}`}
-                            style={{ ...weekVars(colorForWeek(it.t.weekKey)), background: 'var(--wk-bg)', color: 'var(--wk-ink)' }}
-                            title={it.t.title}
-                          >
-                            {isActivity(it.t) && <PinIcon width={10} height={10} strokeWidth={2.6} className="mr-0.5 inline align-[-1px]" />}
-                            {it.t.title}
-                          </li>
-                        ) : (
-                          <li
-                            key={it.r.id}
-                            className={`flex items-center gap-1 truncate rounded-md px-1 py-0.5 text-[11.5px] leading-snug font-semibold ${
-                              it.r.done ? 'text-[var(--ink-faint)] line-through' : 'text-[var(--ink-soft)]'
-                            }`}
-                            title={it.r.title}
-                          >
-                            <BellIcon width={10} height={10} strokeWidth={2.6} className="shrink-0" />
-                            {it.r.time && <span className="tabular-nums">{it.r.time}</span>}
-                            <span className="truncate">{it.r.title}</span>
-                          </li>
-                        ),
-                      )}
+                      {all.slice(0, MAX_ITEMS).map((t) => (
+                        <li
+                          key={t.id}
+                          className={`wk truncate rounded-md px-1.5 py-0.5 text-[11.5px] leading-snug font-bold ${t.completedAt ? 'line-through opacity-50' : ''}`}
+                          style={{ ...weekVars(colorForWeek(t.weekKey)), background: 'var(--wk-bg)', color: 'var(--wk-ink)' }}
+                          title={t.title}
+                        >
+                          {isActivity(t) && <PinIcon width={10} height={10} strokeWidth={2.6} className="mr-0.5 inline align-[-1px]" />}
+                          {t.title}
+                        </li>
+                      ))}
                       {extra > 0 && <li className="px-1.5 text-[11px] font-bold text-[var(--ink-soft)]">+{extra} más</li>}
                     </ul>
                   </div>
@@ -188,8 +166,10 @@ export function CalendarView({ now, selected, onSelect, onAddOnDay, items, activ
       </div>
 
       <p className="mt-3 px-1 text-xs text-[var(--ink-soft)]">
-        Las tareas con fecha aparecen solas con el color de su semana. Toca un día para ver su agenda o agregar recordatorios.
+        Las tareas con fecha aparecen solas con el color de su semana. Toca un día para ver su agenda o agregarle una actividad.
       </p>
+
+      <div className="mt-5 lg:hidden">{agenda}</div>
 
       <ActivityList now={now} activities={activities} renderActivity={renderActivity} onMove={onMove} />
     </div>

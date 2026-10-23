@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type Ref } from 'react';
 import { isActivity, type Task, type TaskKind } from './domain/task';
 import type { Category } from './domain/category';
-import { compareReminders, type Reminder } from './domain/reminder';
+import { reminderToActivity } from './domain/reminder';
 import { colorForWeek, confettiColors, weekVars } from './domain/palette';
 import { addDays, getWeekKey, toDayKey } from './domain/week';
 import type { Backend } from './data/backend';
@@ -181,16 +181,24 @@ export default function App({ backend, account }: { backend: Backend; account?: 
     return result;
   }, [settings.sortBy, categories, home, urgentFirst]);
 
-  // Calendario: tareas con fecha + recordatorios, por día. Lo completado se queda (tachado), después de lo pendiente.
+  // Los recordatorios de antes ahora son actividades: se convierten una vez, al cargar.
+  const { reminders: oldReminders, remove: removeReminder } = rem;
+  useEffect(() => {
+    if (!loaded || oldReminders.length === 0) return;
+    for (const r of oldReminders) {
+      restore(reminderToActivity(r));
+      removeReminder(r.id);
+    }
+  }, [loaded, oldReminders, restore, removeReminder]);
+
+  // Calendario: tareas con fecha, por día. Lo completado se queda (tachado), después de lo pendiente.
   const dayItems = useMemo(() => {
     const m = new Map<string, DayItems>();
-    const get = (k: string) => m.get(k) ?? (m.set(k, { tasks: [], reminders: [] }), m.get(k)!);
+    const get = (k: string) => m.get(k) ?? (m.set(k, { tasks: [] }), m.get(k)!);
     const doneWithDate = completed.filter((t) => t.dueDate).sort((a, b) => a.completedAt!.localeCompare(b.completedAt!));
     for (const t of [...sorted, ...doneWithDate]) if (t.dueDate) get(t.dueDate).tasks.push(t);
-    const reminders = [...rem.reminders].sort((a, b) => Number(a.done) - Number(b.done) || compareReminders(a, b));
-    for (const r of reminders) get(r.date).reminders.push(r);
     return m;
-  }, [sorted, completed, rem.reminders]);
+  }, [sorted, completed]);
 
   const dayMarks = useMemo(() => {
     const m = new Map<string, DayMarks>();
@@ -198,7 +206,6 @@ export default function App({ backend, account }: { backend: Backend; account?: 
       m.set(k, {
         // Los anillos cuentan solo lo pendiente
         taskColors: v.tasks.filter((t) => !t.completedAt).map((t) => colorForWeek(t.weekKey).light.accent),
-        reminders: v.reminders.filter((r) => !r.done).length,
       });
     }
     return m;
@@ -308,22 +315,6 @@ export default function App({ backend, account }: { backend: Backend; account?: 
     [categories, cats],
   );
 
-  const handleToggleReminder = useCallback(
-    (r: Reminder) => {
-      rem.update(r.id, { done: !r.done });
-      if (!r.done && settings.sound) playComplete();
-    },
-    [rem, settings.sound],
-  );
-
-  const handleDeleteReminder = useCallback(
-    (r: Reminder) => {
-      rem.remove(r.id);
-      push('Recordatorio eliminado', () => rem.restore(r));
-    },
-    [rem, push],
-  );
-
   const openTask = useCallback(
     (task: Task) => {
       setView(showsAtHome(task) ? 'home' : 'calendar');
@@ -336,6 +327,21 @@ export default function App({ backend, account }: { backend: Backend; account?: 
     setSelectedDay(key);
     window.setTimeout(() => agendaInputRef.current?.focus(), 50);
   }, []);
+
+  const renderAgenda = (ref?: Ref<HTMLInputElement>, className?: string) => (
+    <DayAgenda
+      ref={ref}
+      className={className}
+      dayKey={selectedDay}
+      now={now}
+      tasks={dayItems.get(selectedDay)?.tasks ?? []}
+      overdue={overdue}
+      onCompleteTask={handleComplete}
+      onOpenTask={openTask}
+      onReopenTask={handleReopen}
+      onAddActivity={(title) => handleAdd(title, selectedDay, null, 'activity')}
+    />
+  );
 
   useHotkeys({
     focusInput: () => {
@@ -466,6 +472,7 @@ export default function App({ backend, account }: { backend: Backend; account?: 
               activities={activities}
               renderActivity={(t, drag) => renderCard(t, drag, true)}
               onMove={handleMove}
+              agenda={renderAgenda()}
             />
           )}
 
@@ -519,20 +526,8 @@ export default function App({ backend, account }: { backend: Backend; account?: 
             <ProgressCard done={doneThisWeek} pending={pending.length} lastWeek={doneLastWeek} onOpen={() => setCompletedOpen(true)} />
           </div>
           {view !== 'calendar' && <MiniCalendar now={now} selected={selectedDay} onSelect={setSelectedDay} marks={dayMarks} />}
-          <DayAgenda
-            ref={agendaInputRef}
-            dayKey={selectedDay}
-            now={now}
-            tasks={dayItems.get(selectedDay)?.tasks ?? []}
-            overdue={overdue}
-            reminders={dayItems.get(selectedDay)?.reminders ?? []}
-            onCompleteTask={handleComplete}
-            onOpenTask={openTask}
-            onReopenTask={handleReopen}
-            onAddReminder={(title, time) => rem.add(title, selectedDay, time)}
-            onToggleReminder={handleToggleReminder}
-            onDeleteReminder={handleDeleteReminder}
-          />
+          {/* En el Calendario, en celular, la agenda va justo bajo el mes */}
+          {renderAgenda(agendaInputRef, view === 'calendar' ? 'max-lg:hidden' : '')}
         </aside>
       </div>
       </div>
