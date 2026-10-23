@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { Task } from './domain/task';
+import { isActivity, type Task, type TaskKind } from './domain/task';
 import type { Category } from './domain/category';
 import { compareReminders, type Reminder } from './domain/reminder';
 import { colorForWeek, confettiColors, weekVars } from './domain/palette';
@@ -140,18 +140,29 @@ export default function App({ backend, account }: { backend: Backend; account?: 
   // Orden personal (arrastrando). Por defecto, lo más antiguo arriba y lo recién anotado al final.
   const sorted = useMemo(() => [...pending].sort((a, b) => a.order - b.order), [pending]);
 
-  // Próximos días: vencen hoy, mañana o pasado mañana (o ya vencieron). Van arriba, la más urgente primero.
+  // Las actividades viven en el Calendario; en Inicio aparecen solo el día que les toca.
+  const showsAtHome = useCallback((t: Task) => !isActivity(t) || t.dueDate === todayKey, [todayKey]);
+  const home = useMemo(() => sorted.filter(showsAtHome), [sorted, showsAtHome]);
+  const activities = useMemo(
+    () => sorted.filter(isActivity).sort((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? '') || a.order - b.order),
+    [sorted],
+  );
+
+  // Próximos días: vencen hoy, mañana o pasado mañana (o ya vencieron). Van arriba: primero las actividades
+  // de hoy, después la más urgente.
   const soonLimit = toDayKey(addDays(now, 2));
   const isSoon = useCallback((t: Task) => !!t.dueDate && t.dueDate <= soonLimit, [soonLimit]);
   const urgentFirst = useCallback(
     (list: Task[]) => [
-      ...list.filter(isSoon).sort((a, b) => a.dueDate!.localeCompare(b.dueDate!) || a.order - b.order),
+      ...list
+        .filter(isSoon)
+        .sort((a, b) => Number(isActivity(b)) - Number(isActivity(a)) || a.dueDate!.localeCompare(b.dueDate!) || a.order - b.order),
       ...list.filter((t) => !isSoon(t)),
     ],
     [isSoon],
   );
-  const soon = useMemo(() => urgentFirst(sorted).filter(isSoon), [sorted, urgentFirst, isSoon]);
-  const rest = useMemo(() => sorted.filter((t) => !isSoon(t)), [sorted, isSoon]);
+  const soon = useMemo(() => urgentFirst(home).filter(isSoon), [home, urgentFirst, isSoon]);
+  const rest = useMemo(() => home.filter((t) => !isSoon(t)), [home, isSoon]);
 
   const counts = useMemo(() => {
     const m = new Map<string, number>();
@@ -163,12 +174,12 @@ export default function App({ backend, account }: { backend: Backend; account?: 
     if (settings.sortBy !== 'category') return [];
     const known = new Set(categories.map((c) => c.id));
     const result: Group[] = categories
-      .map((c) => ({ key: c.id, title: c.name, emoji: c.emoji, tasks: urgentFirst(sorted.filter((t) => t.categoryId === c.id)) }))
+      .map((c) => ({ key: c.id, title: c.name, emoji: c.emoji, tasks: urgentFirst(home.filter((t) => t.categoryId === c.id)) }))
       .filter((g) => g.tasks.length > 0);
-    const loose = urgentFirst(sorted.filter((t) => !t.categoryId || !known.has(t.categoryId)));
+    const loose = urgentFirst(home.filter((t) => !t.categoryId || !known.has(t.categoryId)));
     if (loose.length) result.push({ key: 'none', title: 'Sin categoría', emoji: '·', tasks: loose });
     return result;
-  }, [settings.sortBy, categories, sorted, urgentFirst]);
+  }, [settings.sortBy, categories, home, urgentFirst]);
 
   // Calendario: tareas con fecha + recordatorios, por día. Lo completado se queda (tachado), después de lo pendiente.
   const dayItems = useMemo(() => {
@@ -194,7 +205,8 @@ export default function App({ backend, account }: { backend: Backend; account?: 
   }, [dayItems]);
 
   const overdue = useMemo(
-    () => (selectedDay === todayKey ? sorted.filter((t) => t.dueDate && t.dueDate < todayKey) : []),
+    // Una actividad que ya pasó no está «atrasada»: solo fue.
+    () => (selectedDay === todayKey ? sorted.filter((t) => t.dueDate && t.dueDate < todayKey && !isActivity(t)) : []),
     [selectedDay, todayKey, sorted],
   );
 
@@ -217,15 +229,16 @@ export default function App({ backend, account }: { backend: Backend; account?: 
   );
 
   const handleAdd = useCallback(
-    (title: string, due: string | null, categoryId: string | null) => {
-      const task = add(title, now, due, categoryId);
+    (title: string, due: string | null, categoryId: string | null, kind: TaskKind = 'task') => {
+      const task = add(title, now, due, categoryId, kind);
       if (settings.sound) playAdd();
       const short = title.length > 34 ? `${title.slice(0, 32)}…` : title;
-      push(`Agregada: «${short}»`, () => remove(task.id));
+      const where = view === 'home' && !showsAtHome(task) ? ' en el Calendario' : '';
+      push(`Agregada${where}: «${short}»`, () => remove(task.id));
       setFreshId(task.id);
       window.setTimeout(() => setFreshId((id) => (id === task.id ? null : id)), 2200);
     },
-    [add, now, settings.sound, push, remove],
+    [add, now, settings.sound, push, remove, view, showsAtHome],
   );
 
   const handleDelete = useCallback(
@@ -237,7 +250,29 @@ export default function App({ backend, account }: { backend: Backend; account?: 
   );
 
   const handleRename = useCallback((task: Task, title: string) => update(task.id, { title }), [update]);
-  const handleSetDue = useCallback((task: Task, dueDate: string | null) => update(task.id, { dueDate }), [update]);
+  /** Si un cambio saca la tarea de la sección que se está viendo, se avisa dónde quedó. */
+  const updateAndTell = useCallback(
+    (task: Task, patch: Partial<Task>) => {
+      update(task.id, patch);
+      const after = { ...task, ...patch };
+      const undo = () => update(task.id, { kind: isActivity(task) ? 'activity' : 'task', dueDate: task.dueDate ?? null });
+      if (view === 'home' && !showsAtHome(after)) {
+        setEditingId(null);
+        push('Quedó como actividad en el Calendario 📍', undo);
+      } else if (view === 'calendar' && isActivity(task) && !isActivity(after)) {
+        setEditingId(null);
+        push('Volvió a Inicio como tarea', undo);
+      }
+    },
+    [update, view, showsAtHome, push],
+  );
+  const handleSetDue = useCallback((task: Task, dueDate: string | null) => updateAndTell(task, { dueDate }), [updateAndTell]);
+  const handleSetKind = useCallback(
+    (task: Task, kind: TaskKind, dueDate = task.dueDate ?? null) =>
+      // Una actividad siempre tiene día: si no tenía fecha, queda para hoy
+      updateAndTell(task, { kind, dueDate: kind === 'activity' ? (dueDate ?? todayKey) : dueDate }),
+    [updateAndTell, todayKey],
+  );
   const handleSetCategory = useCallback(
     (task: Task, categoryId: string | null) => update(task.id, { categoryId }),
     [update],
@@ -291,10 +326,10 @@ export default function App({ backend, account }: { backend: Backend; account?: 
 
   const openTask = useCallback(
     (task: Task) => {
-      setView('home');
+      setView(showsAtHome(task) ? 'home' : 'calendar');
       setEditingId(task.id);
     },
-    [setView],
+    [setView, showsAtHome],
   );
 
   const addOnDay = useCallback((key: string) => {
@@ -316,17 +351,19 @@ export default function App({ backend, account }: { backend: Backend; account?: 
     },
   });
 
-  const renderCard = (t: Task, drag: { onDragStart: (id: string) => void; onDragEnd: () => void }) => (
+  type Drag = { onDragStart: (id: string) => void; onDragEnd: () => void };
+  const renderCard = (t: Task, drag: Drag, showCategory = settings.sortBy === 'week') => (
     <TaskCard
       key={t.id}
       task={t}
       now={now}
       currentWeekKey={weekKey}
       categories={categories}
-      showCategory={settings.sortBy === 'week'}
+      showCategory={showCategory}
       onComplete={handleComplete}
       onRename={handleRename}
       onSetDue={handleSetDue}
+      onSetKind={handleSetKind}
       onSetCategory={handleSetCategory}
       editing={editingId === t.id}
       fresh={freshId === t.id}
@@ -370,13 +407,13 @@ export default function App({ backend, account }: { backend: Backend; account?: 
               </div>
 
               {loaded &&
-                (sorted.length === 0 ? (
+                (home.length === 0 ? (
                   <EmptyState hasHistory={completed.length > 0} />
                 ) : (
                   <section aria-label="Pendientes">
                     <div className="mb-4 flex items-center gap-2 px-1">
                       <h2 className="font-display text-lg font-semibold tracking-tight">Pendientes</h2>
-                      <span className="text-sm font-bold text-[var(--ink-faint)] tabular-nums">{sorted.length}</span>
+                      <span className="text-sm font-bold text-[var(--ink-faint)] tabular-nums">{home.length}</span>
                       <div className="ml-auto">
                         <SortToggle value={settings.sortBy} onChange={(sortBy) => setSettings({ sortBy })} />
                       </div>
@@ -420,7 +457,16 @@ export default function App({ backend, account }: { backend: Backend; account?: 
           )}
 
           {view === 'calendar' && (
-            <CalendarView now={now} selected={selectedDay} onSelect={setSelectedDay} onAddOnDay={addOnDay} items={dayItems} />
+            <CalendarView
+              now={now}
+              selected={selectedDay}
+              onSelect={setSelectedDay}
+              onAddOnDay={addOnDay}
+              items={dayItems}
+              activities={activities}
+              renderActivity={(t, drag) => renderCard(t, drag, true)}
+              onMove={handleMove}
+            />
           )}
 
           {view === 'appearance' && (

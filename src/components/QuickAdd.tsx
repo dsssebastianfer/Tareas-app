@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { detectCategory, stripTags, type Category } from '../domain/category';
+import type { TaskKind } from '../domain/task';
 import { CategoryChip } from './CategoryChip';
 import { CategoryPicker } from './CategoryPicker';
 import { DueChip } from './DueChip';
@@ -11,7 +12,7 @@ import { useIsPhone } from '../hooks/useMediaQuery';
 type Props = {
   now: Date;
   categories: Category[];
-  onAdd: (title: string, due: string | null, categoryId: string | null) => void;
+  onAdd: (title: string, due: string | null, categoryId: string | null, kind: TaskKind) => void;
   onManageCategories: () => void;
 };
 
@@ -25,6 +26,8 @@ export const QuickAdd = forwardRef<HTMLInputElement, Props>(function QuickAdd(
 ) {
   const [value, setValue] = useState('');
   const [due, setDue] = useState<string | null>(null);
+  /** La fecha elegida es el día de una actividad, no un plazo. */
+  const [activity, setActivity] = useState(false);
   /** undefined = automática (detectada del texto); string/null = elegida a mano. */
   const [manualCat, setManualCat] = useState<string | null | undefined>(undefined);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -52,9 +55,10 @@ export const QuickAdd = forwardRef<HTMLInputElement, Props>(function QuickAdd(
         e.preventDefault();
         const title = stripTags(value, categories) || value.trim();
         if (!title) return refocus();
-        onAdd(title, due, category?.id ?? null);
+        onAdd(title, due, category?.id ?? null, activity && due ? 'activity' : 'task');
         setValue('');
         setDue(null);
+        setActivity(false);
         setManualCat(undefined);
         setAdded(Date.now());
         refocus();
@@ -142,13 +146,15 @@ export const QuickAdd = forwardRef<HTMLInputElement, Props>(function QuickAdd(
           value={due}
           now={now}
           align={menuAlign}
+          activity={activity}
+          onActivityChange={setActivity}
           onChange={(v) => {
             setDue(v);
             refocus();
           }}
           trigger={(toggle, open) =>
             due ? (
-              <DueChip dueKey={due} now={now} onClick={toggle} className="py-1.5 text-[13px]" />
+              <DueChip dueKey={due} now={now} activity={activity} onClick={toggle} className="py-1.5 text-[13px]" />
             ) : (
               <button
                 type="button"

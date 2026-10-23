@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AnimatePresence, Reorder, motion, useAnimationControls } from 'motion/react';
-import type { Task } from '../domain/task';
+import { isActivity, type Task, type TaskKind } from '../domain/task';
 import type { Category } from '../domain/category';
 import { colorForWeek, weekVars } from '../domain/palette';
 import { quickDueOptions } from '../domain/due';
@@ -28,6 +28,8 @@ type Props = {
   onComplete: (task: Task, origin: Element) => void;
   onRename: (task: Task, title: string) => void;
   onSetDue: (task: Task, due: string | null) => void;
+  /** Cambiar entre tarea y actividad, y opcionalmente la fecha (una actividad sin día queda para hoy). */
+  onSetKind: (task: Task, kind: TaskKind, due?: string | null) => void;
   onSetCategory: (task: Task, categoryId: string | null) => void;
   onDelete: (task: Task) => void;
   /** Arrastrar para reordenar (lo maneja la lista). */
@@ -51,6 +53,7 @@ export const TaskCard = forwardRef<HTMLLIElement, Props>(function TaskCard(
     onComplete,
     onRename,
     onSetDue,
+    onSetKind,
     onSetCategory,
     onDelete,
     onDragStart,
@@ -76,6 +79,10 @@ export const TaskCard = forwardRef<HTMLLIElement, Props>(function TaskCard(
   });
   const age = weeksBetween(task.weekKey, currentWeekKey);
   const due = task.dueDate ?? null;
+  const activity = isActivity(task);
+  /** «Con plazo» elegido pero aún sin fecha: solo vive mientras la tarjeta está abierta. */
+  const [wantsDeadline, setWantsDeadline] = useState(false);
+  const type: Type = activity ? 'activity' : due || wantsDeadline ? 'deadline' : 'none';
   const category = categories.find((c) => c.id === task.categoryId) ?? null;
   const chipCategory = showCategory ? category : null;
 
@@ -89,6 +96,7 @@ export const TaskCard = forwardRef<HTMLLIElement, Props>(function TaskCard(
       const title = draft.trim();
       if (title && title !== task.title) onRename(task, title);
       else setDraft(task.title);
+      setWantsDeadline(false);
     }
     wasEditing.current = editing;
   }, [editing]);
@@ -117,6 +125,17 @@ export const TaskCard = forwardRef<HTMLLIElement, Props>(function TaskCard(
   };
 
   const options = quickDueOptions(now);
+
+  const chooseType = (t: Type) => {
+    setWantsDeadline(t === 'deadline');
+    if (t === 'activity') {
+      if (!activity) onSetKind(task, 'activity');
+      return;
+    }
+    const nextDue = t === 'none' ? null : due;
+    if (activity) onSetKind(task, 'task', nextDue);
+    else if (nextDue !== due) onSetDue(task, nextDue);
+  };
 
   return (
     <Reorder.Item
@@ -173,7 +192,7 @@ export const TaskCard = forwardRef<HTMLLIElement, Props>(function TaskCard(
             </span>
             {(due || chipCategory || age > 0) && (
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                {due && <DueChip dueKey={due} now={now} />}
+                {due && <DueChip dueKey={due} now={now} activity={activity} />}
                 {chipCategory && <CategoryChip category={chipCategory} />}
                 <AgeBadge weeks={age} />
               </div>
@@ -233,27 +252,38 @@ export const TaskCard = forwardRef<HTMLLIElement, Props>(function TaskCard(
               </Field>
             )}
 
-            <Field label="Fecha límite">
-              {options.map((o) => {
-                const selected = o.key === due;
-                return (
-                  <Option
-                    key={o.key}
-                    selected={selected}
-                    onClick={() => onSetDue(task, selected ? null : o.key)}
-                    title={selected ? 'Quitar fecha' : undefined}
-                  >
-                    {o.label}
-                  </Option>
-                );
-              })}
-              <DateField
-                value={due}
-                now={now}
-                onChange={(v) => onSetDue(task, v)}
-                selected={!!due && !options.some((o) => o.key === due)}
-              />
+            <Field label="Tipo">
+              {TYPES.map((t) => (
+                <Option key={t.value} selected={type === t.value} onClick={() => chooseType(t.value)} title={t.hint}>
+                  {t.label}
+                </Option>
+              ))}
             </Field>
+
+            {type !== 'none' && (
+              <Field label={activity ? 'Día de la actividad' : 'Fecha límite'}>
+                {options.map((o) => {
+                  const selected = o.key === due;
+                  return (
+                    <Option
+                      key={o.key}
+                      selected={selected}
+                      // Una actividad siempre tiene día: tocar el elegido no lo quita
+                      onClick={() => !(selected && activity) && onSetDue(task, selected ? null : o.key)}
+                      title={selected && !activity ? 'Quitar fecha' : undefined}
+                    >
+                      {o.label}
+                    </Option>
+                  );
+                })}
+                <DateField
+                  value={due}
+                  now={now}
+                  onChange={(v) => onSetDue(task, v)}
+                  selected={!!due && !options.some((o) => o.key === due)}
+                />
+              </Field>
+            )}
 
             <div className="flex items-center justify-between pt-1">
               <button
@@ -279,6 +309,14 @@ export const TaskCard = forwardRef<HTMLLIElement, Props>(function TaskCard(
     </Reorder.Item>
   );
 });
+
+type Type = 'none' | 'deadline' | 'activity';
+
+const TYPES: { value: Type; label: string; hint: string }[] = [
+  { value: 'none', label: 'Sin plazo', hint: 'Sin fecha' },
+  { value: 'deadline', label: 'Con plazo', hint: 'Hay que terminarla a más tardar ese día' },
+  { value: 'activity', label: 'Actividad', hint: 'Se hace un día determinado: vive en el Calendario y aparece en Inicio ese día' },
+];
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (

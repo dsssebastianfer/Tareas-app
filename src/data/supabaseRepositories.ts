@@ -57,6 +57,7 @@ export function supabaseTaskRepository(db: SupabaseClient) {
         created_at: t.createdAt,
         week_key: t.weekKey,
         due_date: t.dueDate,
+        kind: t.kind,
         category_id: t.categoryId,
         completed_at: t.completedAt,
         order: t.order,
@@ -67,6 +68,8 @@ export function supabaseTaskRepository(db: SupabaseClient) {
       createdAt: iso(r.created_at)!,
       weekKey: r.week_key as string,
       dueDate: (r.due_date as string | null) ?? null,
+      // Solo las actividades llevan «kind»: así las tareas normales se guardan igual que antes
+      ...(r.kind === 'activity' ? { kind: 'activity' as const } : {}),
       categoryId: (r.category_id as string | null) ?? null,
       completedAt: iso(r.completed_at),
       order: r.order as number,

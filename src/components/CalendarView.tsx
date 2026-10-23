@@ -1,12 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { motion } from 'motion/react';
-import type { Task } from '../domain/task';
+import { isActivity, type Task } from '../domain/task';
 import type { Reminder } from '../domain/reminder';
-import { monthOf, monthTitle, monthWeeks, shiftMonth, WEEKDAYS_LONG, type MonthRef } from '../domain/calendar';
+import { longDayLabel, monthOf, monthTitle, monthWeeks, shiftMonth, WEEKDAYS_LONG, type MonthRef } from '../domain/calendar';
+import { dueInfo } from '../domain/due';
 import { colorForWeek, weekVars } from '../domain/palette';
 import { getWeekKey, parseDayKey, toDayKey } from '../domain/week';
-import { BellIcon, ChevronIcon, PlusIcon } from './icons';
+import { BellIcon, ChevronIcon, PinIcon, PlusIcon } from './icons';
 import { DayRing, ringColors } from './DayRing';
+import { SortableTaskList } from './SortableTaskList';
+
+type Drag = { onDragStart: (id: string) => void; onDragEnd: () => void };
 
 export type DayItems = { tasks: Task[]; reminders: Reminder[] };
 
@@ -17,11 +21,15 @@ type Props = {
   /** Elegir el día y llevar el foco a «Agregar recordatorio». */
   onAddOnDay: (dayKey: string) => void;
   items: Map<string, DayItems>;
+  /** Actividades pendientes, por fecha: se listan todas bajo el mes. */
+  activities: Task[];
+  renderActivity: (task: Task, drag: Drag) => ReactNode;
+  onMove: (task: Task, order: number) => void;
 };
 
 const MAX_ITEMS = 3;
 
-export function CalendarView({ now, selected, onSelect, onAddOnDay, items }: Props) {
+export function CalendarView({ now, selected, onSelect, onAddOnDay, items, activities, renderActivity, onMove }: Props) {
   const [month, setMonth] = useState<MonthRef>(() => monthOf(parseDayKey(selected)));
   const todayKey = toDayKey(now);
   const weeks = monthWeeks(month);
@@ -152,6 +160,7 @@ export function CalendarView({ now, selected, onSelect, onAddOnDay, items }: Pro
                             style={{ ...weekVars(colorForWeek(it.t.weekKey)), background: 'var(--wk-bg)', color: 'var(--wk-ink)' }}
                             title={it.t.title}
                           >
+                            {isActivity(it.t) && <PinIcon width={10} height={10} strokeWidth={2.6} className="mr-0.5 inline align-[-1px]" />}
                             {it.t.title}
                           </li>
                         ) : (
@@ -181,7 +190,53 @@ export function CalendarView({ now, selected, onSelect, onAddOnDay, items }: Pro
       <p className="mt-3 px-1 text-xs text-[var(--ink-soft)]">
         Las tareas con fecha aparecen solas con el color de su semana. Toca un día para ver su agenda o agregar recordatorios.
       </p>
+
+      <ActivityList now={now} activities={activities} renderActivity={renderActivity} onMove={onMove} />
     </div>
+  );
+}
+
+/** Todas las actividades pendientes, agrupadas por día. Las que ya pasaron sin marcarse quedan arriba. */
+function ActivityList({ now, activities, renderActivity, onMove }: Pick<Props, 'now' | 'activities' | 'renderActivity' | 'onMove'>) {
+  const days: { key: string; tasks: Task[] }[] = [];
+  for (const t of activities) {
+    const key = t.dueDate ?? '';
+    if (days.at(-1)?.key === key) days.at(-1)!.tasks.push(t);
+    else days.push({ key, tasks: [t] });
+  }
+  return (
+    <section aria-label="Actividades" className="mt-10">
+      <h2 className="mb-1 flex items-center gap-2 px-1 font-display text-lg font-semibold tracking-tight">
+        <PinIcon width={18} height={18} className="text-[var(--wk-accent)]" /> Actividades
+        <span className="font-sans text-sm font-bold text-[var(--ink-faint)] tabular-nums">{activities.length}</span>
+      </h2>
+      <p className="mb-5 px-1 text-xs text-[var(--ink-soft)]">
+        Lo que se hace un día determinado. Aparecen en Inicio solo el día que les toca.
+      </p>
+      {days.length === 0 ? (
+        <p className="surface rounded-2xl px-4 py-3.5 text-sm text-[var(--ink-soft)]">
+          No hay actividades pendientes. Para crear una, abre una tarea y elige <b>Actividad</b>, o márcala así al ponerle fecha.
+        </p>
+      ) : (
+        <div className="flex flex-col gap-6">
+          {days.map(({ key, tasks }) => {
+            const info = key ? dueInfo(key, now, true) : null;
+            const past = key < toDayKey(now);
+            // «Hoy», «Mañana», «Fue ayer»…; el nombre del día ya está en el título
+            const relative = info && (past || info.tone !== 'later') ? info.label : null;
+            return (
+              <section key={key} aria-label={key ? longDayLabel(parseDayKey(key)) : 'Sin día'}>
+                <h3 className={`mb-2 flex items-baseline gap-2 px-1 text-[15px] font-extrabold ${past ? 'text-[var(--ink-soft)]' : ''}`}>
+                  {key ? longDayLabel(parseDayKey(key)) : 'Sin día'}
+                  {relative && <span className="text-xs font-bold text-[var(--ink-faint)]">{relative}</span>}
+                </h3>
+                <SortableTaskList tasks={tasks} renderCard={renderActivity} onMove={onMove} />
+              </section>
+            );
+          })}
+        </div>
+      )}
+    </section>
   );
 }
 

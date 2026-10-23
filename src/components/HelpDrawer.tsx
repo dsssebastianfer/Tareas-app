@@ -3,7 +3,7 @@ import { PALETTE, weekVars } from '../domain/palette';
 import { AgeBadge } from './AgeBadge';
 import { DayRing } from './DayRing';
 import { Drawer } from './Drawer';
-import { BellIcon, GripIcon } from './icons';
+import { BellIcon, PinIcon, GripIcon } from './icons';
 
 type Props = { open: boolean; onClose: () => void };
 
@@ -39,6 +39,7 @@ export function HelpDrawer({ open, onClose }: Props) {
               <>Escribe arriba y presiona <Kbd>Enter</Kbd>. Con 📅 le pones fecha límite: escribe solo día y mes (<b>8/10</b>); el año es el actual.</>,
               <>Toca el <b>círculo</b> para completarla. Si fue un error, usa <b>Deshacer</b> o <Kbd>Ctrl Z</Kbd>.</>,
               <>Toca la <b>tarjeta</b> para editar el texto, la categoría o la fecha, o eliminarla.</>,
+              <>Cada tarea tiene un <b>tipo</b>: <b>sin plazo</b>, <b>con plazo</b> (hay que terminarla a más tardar ese día) o <b>actividad</b> <PinIcon width={14} height={14} className="inline align-[-2px]" /> (se hace un día determinado). Las actividades viven en el <b>Calendario</b> y aparecen en Inicio, arriba de todo, solo el día que les toca.</>,
               <>Mantén presionada una tarjeta y <b>arrástrala</b> para ordenar a tu gusto.</>,
               <>La fecha se ve con colores: <span className="due-chip due-overdue rounded-full px-2 py-0.5 text-xs font-bold">Venció</span>{' '}
                 <span className="wk" style={weekVars(PALETTE[4])}><span className="due-today rounded-full px-2 py-0.5 text-xs font-bold">Hoy</span></span>{' '}
@@ -63,6 +64,7 @@ export function HelpDrawer({ open, onClose }: Props) {
           <Bullets
             items={[
               <>Las tareas con fecha aparecen solas en su día, con el color de su semana.</>,
+              <>Debajo del mes están <b>todas tus actividades</b> pendientes, ordenadas por día. Tócalas para editarlas ahí mismo.</>,
               <>
                 Los días con actividades se encierran en un <b>anillo</b>: un segmento por actividad.
                 <span className="ml-2 inline-flex gap-2 align-middle">

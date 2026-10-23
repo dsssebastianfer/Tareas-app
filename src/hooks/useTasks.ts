@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Task } from '../domain/task';
+import type { Task, TaskKind } from '../domain/task';
 import type { TaskRepository } from '../data/TaskRepository';
 import { getWeekKey } from '../domain/week';
 
@@ -18,7 +18,7 @@ export function useTasks(repo: TaskRepository) {
   }, [repo]);
 
   const add = useCallback(
-    (title: string, now: Date, dueDate: string | null = null, categoryId: string | null = null) => {
+    (title: string, now: Date, dueDate: string | null = null, categoryId: string | null = null, kind: TaskKind = 'task') => {
       const task: Task = {
         id: crypto.randomUUID(),
         title,
@@ -26,6 +26,7 @@ export function useTasks(repo: TaskRepository) {
         weekKey: getWeekKey(now),
         dueDate,
         categoryId,
+        ...(kind === 'activity' ? { kind } : {}),
         completedAt: null,
         order: Date.now(),
       };

@@ -8,9 +8,15 @@ const short = (d: Date) =>
   d.toLocaleDateString('es-CL', { weekday: 'short', day: 'numeric', month: 'short' }).replace(/\./g, '');
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
-export function dueInfo(dueKey: string, today: Date): DueInfo {
+/** `activity`: el día en que se hace, no un plazo; si ya pasó no «venció», solo «fue». */
+export function dueInfo(dueKey: string, today: Date, activity = false): DueInfo {
   const due = parseDayKey(dueKey);
   const diff = daysBetween(today, due);
+  if (diff < 0 && activity) {
+    if (diff === -1) return { label: 'Fue ayer', tone: 'later' };
+    if (diff >= -6) return { label: `Fue el ${weekday(due)}`, tone: 'later' };
+    return { label: `Fue hace ${-diff} días`, tone: 'later' };
+  }
   if (diff < 0) {
     if (diff === -1) return { label: 'Venció ayer', tone: 'overdue' };
     if (diff >= -6) return { label: `Venció el ${weekday(due)}`, tone: 'overdue' };

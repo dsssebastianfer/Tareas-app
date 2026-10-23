@@ -30,12 +30,17 @@ create table if not exists public.tasks (
   -- Lunes de la semana en que se anotó: define el color de la tarea para siempre.
   week_key date not null,
   due_date date,
+  -- «task» (con o sin plazo) o «activity» (se hace un día determinado; vive en el Calendario).
+  kind text not null default 'task' check (kind in ('task', 'activity')),
   -- Sin llave foránea a propósito: si se borra la categoría, la tarea queda «sin categoría»
   -- y deshacer el borrado la vuelve a asociar.
   category_id uuid,
   completed_at timestamptz,
   "order" double precision not null default 0
 );
+
+-- Bases creadas antes de existir «kind».
+alter table public.tasks add column if not exists kind text not null default 'task' check (kind in ('task', 'activity'));
 
 create table if not exists public.reminders (
   id uuid primary key default gen_random_uuid(),

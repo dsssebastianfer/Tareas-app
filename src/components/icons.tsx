@@ -57,6 +57,14 @@ export const CalendarIcon = (p: P) => (
   </svg>
 );
 
+/** Actividad: algo que pasa en un día y lugar. */
+export const PinIcon = (p: P) => (
+  <svg {...base} {...p}>
+    <path d="M12 21s-6.5-5.6-6.5-11a6.5 6.5 0 0 1 13 0c0 5.4-6.5 11-6.5 11z" />
+    <circle cx="12" cy="10" r="2.3" />
+  </svg>
+);
+
 export const TagIcon = (p: P) => (
   <svg {...base} {...p}>
     <path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7a2 2 0 0 1 1.4.6l7.3 7.3a2 2 0 0 1 0 2.8l-7.1 7.1a2 2 0 0 1-2.8 0l-7.3-7.3a2 2 0 0 1-.2-1.8z" />
