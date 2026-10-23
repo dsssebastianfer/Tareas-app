@@ -194,7 +194,12 @@ export const TaskCard = forwardRef<HTMLLIElement, Props>(function TaskCard(
               <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
                 {due && <DueChip dueKey={due} now={now} activity={activity} />}
                 {chipCategory && <CategoryChip category={chipCategory} />}
-                <AgeBadge weeks={age} />
+                {/* El atraso va a la derecha, separado de la fecha y la categoría */}
+                {age > 0 && (
+                  <span className="ml-auto">
+                    <AgeBadge weeks={age} />
+                  </span>
+                )}
               </div>
             )}
           </div>
