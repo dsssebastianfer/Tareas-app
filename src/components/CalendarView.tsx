@@ -124,7 +124,7 @@ export function CalendarView({ now, selected, onSelect, onAddOnDay, items, activ
                         {d.getDate()}
                         {day && (
                           <DayRing
-                            colors={ringColors(day.tasks.filter((t) => !t.completedAt).map((t) => colorForWeek(t.weekKey).light.accent))}
+                            colors={ringColors(day.tasks)}
                             className={isToday ? '-inset-[4px]' : 'inset-0'}
                           />
                         )}

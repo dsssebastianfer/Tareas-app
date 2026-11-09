@@ -3,10 +3,10 @@ import { monthOf, monthTitle, monthWeeks, shiftMonth, WEEKDAYS, type MonthRef } 
 import { colorForWeek, weekVars } from '../domain/palette';
 import { getWeekKey, parseDayKey, toDayKey } from '../domain/week';
 import { ChevronIcon } from './icons';
-import { DayRing, ringColors } from './DayRing';
+import { DayRing } from './DayRing';
 
 /** Marcas de un día: colores de las tareas (por su semana) y si hay recordatorios. */
-export type DayMarks = { taskColors: string[] };
+export type DayMarks = { ringColors: string[] };
 
 type Props = {
   now: Date;
@@ -77,7 +77,7 @@ export function MiniCalendar({ now, selected, onSelect, marks }: Props) {
                   }
                 >
                   {d.getDate()}
-                  {m && <DayRing colors={ringColors(m.taskColors)} className={isSelected ? '-inset-[4px]' : 'inset-0'} />}
+                  {m && <DayRing colors={m.ringColors} className={isSelected ? '-inset-[4px]' : 'inset-0'} />}
                 </button>
               );
             })}

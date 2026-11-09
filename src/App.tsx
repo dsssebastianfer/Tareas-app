@@ -31,6 +31,7 @@ import { CalendarView, type DayItems } from './components/CalendarView';
 import { CategoriesView } from './components/CategoriesView';
 import { ProgressCard } from './components/ProgressCard';
 import { MiniCalendar, type DayMarks } from './components/MiniCalendar';
+import { ringColors } from './components/DayRing';
 import { DayAgenda } from './components/DayAgenda';
 import { CompletedContent, CompletedDrawer } from './components/CompletedDrawer';
 import { EmptyState } from './components/EmptyState';
@@ -205,8 +206,8 @@ export default function App({ backend, account }: { backend: Backend; account?: 
     const m = new Map<string, DayMarks>();
     for (const [k, v] of dayItems) {
       m.set(k, {
-        // Los anillos cuentan solo lo pendiente
-        taskColors: v.tasks.filter((t) => !t.completedAt).map((t) => colorForWeek(t.weekKey).light.accent),
+        // Lo completado se ve desteñido
+        ringColors: ringColors(v.tasks),
       });
     }
     return m;

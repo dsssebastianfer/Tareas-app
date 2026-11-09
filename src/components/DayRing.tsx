@@ -1,6 +1,16 @@
-/** Colores del anillo de un día: uno por tarea pendiente (color de su semana). */
-export function ringColors(taskColors: string[]): string[] {
-  return taskColors.slice(0, 6);
+import type { Task } from '../domain/task';
+import { colorForWeek } from '../domain/palette';
+
+/**
+ * Colores del anillo de un día: uno por tarea, con el color de su semana.
+ * Primero lo pendiente; lo completado después y desteñido, para que se note que ya se hizo.
+ */
+export function ringColors(tasks: Task[]): string[] {
+  const color = (t: Task) => colorForWeek(t.weekKey).light.accent;
+  return [
+    ...tasks.filter((t) => !t.completedAt).map(color),
+    ...tasks.filter((t) => t.completedAt).map((t) => `color-mix(in oklab, ${color(t)} 30%, transparent)`),
+  ].slice(0, 6);
 }
 
 const RING_MASK = 'radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2px))';
