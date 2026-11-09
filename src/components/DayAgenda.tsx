@@ -144,7 +144,10 @@ function TaskRow({
         </button>
       )}
       {overdue && (
-        <span className="due-chip due-overdue shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold">Atrasada</span>
+        // Una actividad que ya pasó no «se atrasó»: quedó sin marcar
+        <span className={`due-chip ${isActivity(task) ? 'due-soon' : 'due-overdue'} shrink-0 rounded-full px-2 py-0.5 text-[11px] font-bold`}>
+          {isActivity(task) ? 'Sin marcar' : 'Atrasada'}
+        </span>
       )}
     </motion.li>
   );

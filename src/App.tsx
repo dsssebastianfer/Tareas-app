@@ -213,8 +213,8 @@ export default function App({ backend, account }: { backend: Backend; account?: 
   }, [dayItems]);
 
   const overdue = useMemo(
-    // Una actividad que ya pasó no está «atrasada»: solo fue.
-    () => (selectedDay === todayKey ? sorted.filter((t) => t.dueDate && t.dueDate < todayKey && !isActivity(t)) : []),
+    // Incluye las actividades que ya pasaron sin completarse, para que no se olviden.
+    () => (selectedDay === todayKey ? sorted.filter((t) => t.dueDate && t.dueDate < todayKey) : []),
     [selectedDay, todayKey, sorted],
   );
 
