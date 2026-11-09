@@ -9,7 +9,7 @@ export type Task = {
   /** Fecha límite opcional, "YYYY-MM-DD". En una actividad, el día en que se hace. */
   dueDate?: string | null;
   /**
-   * «activity»: algo que se hace un día determinado (vive en el Calendario y sale en Inicio solo ese día).
+   * «activity»: algo que se hace un día determinado (vive en el Calendario y sale en Inicio desde ese día hasta completarse).
    * Sin valor o «task»: tarea normal, con o sin plazo.
    */
   kind?: TaskKind;

@@ -30,7 +30,7 @@ export function DuePicker({ value, onChange, now, trigger, onOpenChange, align, 
               <div role="radiogroup" aria-label="Tipo de fecha" className="mb-3 grid grid-cols-2 gap-1 rounded-xl p-1" style={{ background: 'color-mix(in oklab, var(--ink) 5%, transparent)' }}>
                 {[
                   { v: false, label: 'Plazo', hint: 'Hay que terminarla a más tardar ese día' },
-                  { v: true, label: 'Actividad', hint: 'Se hace ese día: vive en el Calendario y aparece en Inicio ese día' },
+                  { v: true, label: 'Actividad', hint: 'Se hace ese día: vive en el Calendario y aparece en Inicio desde ese día hasta que la completes' },
                 ].map((o) => (
                   <button
                     key={o.label}

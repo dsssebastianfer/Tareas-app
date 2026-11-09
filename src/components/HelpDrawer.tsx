@@ -39,7 +39,7 @@ export function HelpDrawer({ open, onClose }: Props) {
               <>Escribe arriba y presiona <Kbd>Enter</Kbd>. Con 📅 le pones fecha límite: escribe solo día y mes (<b>8/10</b>); el año es el actual.</>,
               <>Toca el <b>círculo</b> para completarla. Si fue un error, usa <b>Deshacer</b> o <Kbd>Ctrl Z</Kbd>.</>,
               <>Toca la <b>tarjeta</b> para editar el texto, la categoría o la fecha, o eliminarla.</>,
-              <>Cada tarea tiene un <b>tipo</b>: <b>sin plazo</b>, <b>con plazo</b> (hay que terminarla a más tardar ese día) o <b>actividad</b> <PinIcon width={14} height={14} className="inline align-[-2px]" /> (se hace un día determinado). Las actividades viven en el <b>Calendario</b> y aparecen en Inicio, arriba de todo, solo el día que les toca.</>,
+              <>Cada tarea tiene un <b>tipo</b>: <b>sin plazo</b>, <b>con plazo</b> (hay que terminarla a más tardar ese día) o <b>actividad</b> <PinIcon width={14} height={14} className="inline align-[-2px]" /> (se hace un día determinado). Las actividades viven en el <b>Calendario</b> y aparecen en Inicio, arriba de todo, desde el día que les toca hasta que las completes.</>,
               <>Mantén presionada una tarjeta y <b>arrástrala</b> para ordenar a tu gusto.</>,
               <>La fecha se ve con colores: <span className="due-chip due-overdue rounded-full px-2 py-0.5 text-xs font-bold">Venció</span>{' '}
                 <span className="wk" style={weekVars(PALETTE[4])}><span className="due-today rounded-full px-2 py-0.5 text-xs font-bold">Hoy</span></span>{' '}

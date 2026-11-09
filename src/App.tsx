@@ -140,8 +140,9 @@ export default function App({ backend, account }: { backend: Backend; account?: 
   // Orden personal (arrastrando). Por defecto, lo más antiguo arriba y lo recién anotado al final.
   const sorted = useMemo(() => [...pending].sort((a, b) => a.order - b.order), [pending]);
 
-  // Las actividades viven en el Calendario; en Inicio aparecen solo el día que les toca.
-  const showsAtHome = useCallback((t: Task) => !isActivity(t) || t.dueDate === todayKey, [todayKey]);
+  // Las actividades viven en el Calendario; en Inicio aparecen desde el día que les toca
+  // y se quedan mientras no se completen (para que no se olviden).
+  const showsAtHome = useCallback((t: Task) => !isActivity(t) || (!!t.dueDate && t.dueDate <= todayKey), [todayKey]);
   const home = useMemo(() => sorted.filter(showsAtHome), [sorted, showsAtHome]);
   const activities = useMemo(
     () => sorted.filter(isActivity).sort((a, b) => (a.dueDate ?? '').localeCompare(b.dueDate ?? '') || a.order - b.order),

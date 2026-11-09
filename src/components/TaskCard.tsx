@@ -320,7 +320,7 @@ type Type = 'none' | 'deadline' | 'activity';
 const TYPES: { value: Type; label: string; hint: string }[] = [
   { value: 'none', label: 'Sin plazo', hint: 'Sin fecha' },
   { value: 'deadline', label: 'Con plazo', hint: 'Hay que terminarla a más tardar ese día' },
-  { value: 'activity', label: 'Actividad', hint: 'Se hace un día determinado: vive en el Calendario y aparece en Inicio ese día' },
+  { value: 'activity', label: 'Actividad', hint: 'Se hace un día determinado: vive en el Calendario y aparece en Inicio desde ese día hasta que la completes' },
 ];
 
 function Field({ label, children }: { label: string; children: ReactNode }) {

@@ -191,7 +191,7 @@ function ActivityList({ now, activities, renderActivity, onMove }: Pick<Props, '
         <span className="font-sans text-sm font-bold text-[var(--ink-faint)] tabular-nums">{activities.length}</span>
       </h2>
       <p className="mb-5 px-1 text-xs text-[var(--ink-soft)]">
-        Lo que se hace un día determinado. Aparecen en Inicio solo el día que les toca.
+        Lo que se hace un día determinado. Aparecen en Inicio el día que les toca y siguen ahí hasta que las completes.
       </p>
       {days.length === 0 ? (
         <p className="surface rounded-2xl px-4 py-3.5 text-sm text-[var(--ink-soft)]">
